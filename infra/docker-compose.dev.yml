@@ -1,0 +1,74 @@
+# Magnoo — lingkungan pengembangan lengkap dalam satu perintah.
+#
+#   docker compose -f infra/docker-compose.dev.yml up --build
+#   (atau dari akar repo:  pnpm dev:infra)
+#
+# Menyalakan: database (Postgres), cache (Redis), backend (API), dan web.
+# Build context tiap image = AKAR repo (folder di atas infra/), sebab ini monorepo pnpm.
+name: magnoo-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: magnoo-postgres
+    environment:
+      POSTGRES_USER: magnoo
+      POSTGRES_PASSWORD: magnoo
+      POSTGRES_DB: magnoo
+    ports:
+      - "5432:5432"
+    volumes:
+      # Volume bernama → data BERTAHAN walau kontainer dihapus (melunasi catatan 0d).
+      - magnoo-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U magnoo -d magnoo"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    container_name: magnoo-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    container_name: magnoo-api
+    environment:
+      NODE_ENV: development
+      PORT: "3000"
+      # Nama service di jaringan compose dipakai sebagai host (bukan localhost).
+      DATABASE_URL: postgresql://magnoo:magnoo@postgres:5432/magnoo
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    container_name: magnoo-web
+    environment:
+      NODE_ENV: production
+      API_URL: http://api:3000
+    ports:
+      - "3001:3001"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  magnoo-postgres-data:

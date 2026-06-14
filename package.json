@@ -13,6 +13,7 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
     "build": "pnpm -r --if-present build",
-    "dev:infra": "docker compose -f infra/docker-compose.dev.yml up"
+    "dev:infra": "docker compose -f infra/docker-compose.dev.yml up --build",
+    "dev:infra:down": "docker compose -f infra/docker-compose.dev.yml down"
   }
 }

@@ -17,10 +17,10 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** Fase 0 (Pondasi) → potongan **0a–0g SELESAI**. ✅
-- **Sedang menuju:** potongan **0h** — `infra/docker-compose.dev.yml` (postgres, redis, api, web) — menyatukan semuanya jadi `docker compose up`. *Belum mulai; menunggu aba-aba pemilik.*
-- **Bukti terakhir yang berjalan:** `apps/mobile` (Flutter 3.44.2) — `flutter analyze` bersih, `flutter test` 1/1 lulus, `flutter build web` sukses (compile penuh termasuk model Dart hasil 0b → utang 0b lunas).
-- **Catatan infra:** PostgreSQL dev berjalan via kontainer Docker `magnoo-postgres` (port 5432, user/pass/db = magnoo). Ini sementara; compose resmi dibuat di 0h. Data kontainer belum persisten — kalau kontainer dihapus, jalankan ulang migrasi.
+- **Posisi sekarang:** Fase 0 (Pondasi) → potongan **0a–0h SELESAI**. ✅
+- **Sedang menuju:** potongan **0i** — skrip seed (1 sekolah, 1 kelas, 1 admin, 5 siswa, 2 guru, 2 ortu). *Belum mulai; menunggu aba-aba pemilik.*
+- **Bukti terakhir yang berjalan:** `docker compose up` seluruh stack **HIJAU** — 4 kontainer healthy (postgres, redis, api, web); `curl :3000/health` HTTP 200; `curl :3001` HTTP 200 menampilkan "API terhubung · magnoo-api" (web → api → db tersambung).
+- **Catatan infra:** PostgreSQL dev kini lewat **compose resmi** (`infra/docker-compose.dev.yml`), volume bernama `magnoo-postgres-data` → **data persisten**. Nyalakan semua: `pnpm dev:infra` (atau `docker compose -f infra/docker-compose.dev.yml up --build`); matikan: `pnpm dev:infra:down`. API otomatis `prisma migrate deploy` saat start. Kontainer Postgres lama yang berdiri sendiri sudah dihapus (digantikan compose).
 - **Commit terakhir:** lihat `git log --oneline` di folder ini (potongan 0g ter-commit).
 - **Tanggal sesi terakhir:** 2026-06-14.
 - **Peta lengkap potongan Fase 0:** lihat bagian "🧱 RENCANA FASE 0" di bawah (centang = selesai).
@@ -53,7 +53,7 @@
 - [x] **0e** `apps/web` (Next.js) — rangka + halaman cek status API
 - [x] **0f** `apps/portal` (Preact) — rangka super ringan + cek status (<200KB)
 - [x] **0g** `apps/mobile` (Flutter) — rangka + layar cek status API (Flutter dipasang saat potong ini)
-- [ ] **0h** `infra/docker-compose.dev.yml` (postgres, redis, api, web)
+- [x] **0h** `infra/docker-compose.dev.yml` (postgres, redis, api, web)
 - [ ] **0i** Skrip seed: 1 sekolah, 1 kelas, 1 admin, 5 siswa, 2 guru, 2 ortu
 - [ ] **0j** GitHub Actions (lint, typecheck, test, build)
 
@@ -100,6 +100,34 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-14 — Fase 0h: infra/docker-compose.dev.yml (semua jadi satu perintah)
+
+**Yang dikerjakan:** Menyatukan empat bagian (database Postgres, cache Redis, backend API, web) ke dalam SATU perintah `docker compose up`. Tiap bagian dibungkus jadi "kontainer" yang bisa dinyalakan bareng, saling kenal lewat nama (bukan localhost), dan menunggu satu sama lain sampai sehat sebelum lanjut. API otomatis menerapkan migrasi database saat menyala. Sekarang sesi baru cukup satu perintah untuk menghidupkan seluruh lingkungan dev.
+
+**File yang dibuat/diubah:**
+- `infra/docker-compose.dev.yml` — orkestrasi 4 service + healthcheck + volume persisten Postgres.
+- `apps/api/Dockerfile` — image dev API (Node 20, openssl utk Prisma, pnpm; build @magnoo/shared → prisma generate → build API; start = migrate deploy lalu nyalakan server).
+- `apps/web/Dockerfile` — image dev web (Node 20, pnpm; build @magnoo/shared → build Next.js).
+- `.dockerignore` — kecualikan artefak besar & rahasia (.env) dari konteks build.
+- `package.json` (akar) — skrip `dev:infra` (up --build) & `dev:infra:down`.
+
+**Keputusan kecil yang diambil:**
+- Build context tiap image = AKAR repo (monorepo pnpm; API & web pakai paket bersama `@magnoo/shared`).
+- Postgres pakai **volume bernama** `magnoo-postgres-data` → data BERTAHAN walau kontainer dihapus (melunasi catatan "data belum persisten" dari 0d).
+- Healthcheck pakai `fetch` bawaan Node 20 (tanpa perlu curl/wget di dalam image).
+- **Build dilakukan satu-satu** (api lalu web), bukan serentak — build serentak sebelumnya mati exit 137 (kehabisan RAM di mesin 4GB).
+- Kontainer Postgres lama yang berdiri sendiri (sisa 0d, isinya kosong) DIHAPUS atas persetujuan pemilik, supaya port 5432 dipakai Postgres versi compose.
+
+**Sudah dibuktikan jalan?** Ya — `docker compose up -d` → **4 kontainer healthy** (postgres, redis, api, web). Bukti nyata: `curl http://localhost:3000/health` → **HTTP 200** `{"status":"ok","service":"magnoo-api"}`; Postgres compose berisi **39 tabel** (API otomatis migrasi saat start); `curl http://localhost:3001` → **HTTP 200**, halaman menampilkan **"API terhubung · magnoo-api"** — artinya web memanggil API lewat jaringan internal `http://api:3000` dan berhasil (rantai web → api → db tersambung).
+
+**Sudah di-commit?** Ya — `feat(infra): dev docker-compose (postgres, redis, api, web) with healthchecks + Dockerfiles (Fase 0h)`.
+
+**Status:** Selesai (potongan 0h dari 10). DoD Fase 0 "docker compose up semua hijau + klien menampilkan status API" → terpenuhi untuk web; portal & mobile bukan bagian compose 0h.
+
+**Langkah berikutnya:** Potongan **0i** — skrip seed (1 sekolah, 1 kelas, 1 admin, 5 siswa, 2 guru, 2 ortu). Menunggu aba-aba pemilik.
 
 -----
 

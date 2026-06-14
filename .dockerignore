@@ -1,0 +1,19 @@
+# Jangan ikut-sertakan artefak besar / hasil build ke dalam konteks Docker.
+# Dependensi & build dilakukan ulang DI DALAM image agar bersih & reprodusibel.
+**/node_modules
+**/dist
+**/.next
+**/build
+**/.dart_tool
+.git
+**/.git
+**/*.log
+
+# Rahasia tidak boleh masuk image (lihat guardrail #11 aplikasi.md).
+**/.env
+**/.env.*
+!**/.env.example
+
+# Dokumen & artefak non-build
+**/.turbo
+**/coverage
