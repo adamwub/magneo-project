@@ -1,0 +1,6 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "box/sync-agent"
+  - "box/box-bridge"
+  - "box/mgmt-agent"

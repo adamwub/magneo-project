@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# Environment & secrets (NEVER commit — see aplikasi.md guardrail #11)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# Flutter (mobile)
+apps/mobile/.dart_tool/
+apps/mobile/build/
+apps/mobile/.flutter-plugins
+apps/mobile/.flutter-plugins-dependencies
+
+# Prisma local
+apps/api/prisma/*.db
