@@ -17,8 +17,8 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1: **1a ✅** (skema bersama), **1b ✅** (auth inti: login, token, sesi, first-login). Lihat "RENCANA FASE 1" di bawah.
-- **Sedang menuju:** **Potongan 1c** — RBAC: guard `@Roles` + `@Scope`, enforce scope (guru→kelasnya, admin→sekolahnya), pelanggaran → 403 + AuditLog. *Menunggu aba-aba pemilik sebelum mulai.*
+- **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1: **1a ✅** (skema bersama), **1b ✅** (auth inti), **1c ✅** (RBAC + audit append-only). Lihat "RENCANA FASE 1" di bawah.
+- **Sedang menuju:** **Potongan 1d** — Sesi & peran: batas perangkat (siswa 2 / lain 3), refresh reuse-detection → revoke semua sesi, role-switch (linkRoles), list/revoke sesi. *Menunggu aba-aba pemilik sebelum mulai.*
 - **Keputusan NIS sudah DIAMBIL (2026-06-14):** NIS siswa **DISAMARKAN** di cloud (hash berkunci per sekolah jadi `User.username`), NIS mentah TIDAK pernah disimpan di cloud. Detail di "Keputusan Penting" di bawah. *Penerapan transform NIS→samaran masih menyusul di 1f (impor) & disambung ke login; saat ini login siswa mencocokkan `username` apa adanya + butuh `schoolId`.*
 - **Bukti terakhir yang berjalan:** API auth diuji **terhadap database nyata** (port lokal 3100): login guru & siswa ✅ (token JWT terbit, klaim sub/sid/role/schoolId benar), password salah → error generik ✅, refresh berputar (token baru) ✅, endpoint terproteksi tanpa token → 401 ✅, setuju ToS → 204 & re-login `mustAcceptTos:false` ✅, login siswa tanpa schoolId ditolak ✅. Tes unit: shared 24/24, api 15/15 (lockout, rotasi, dll). typecheck 4/4 ✅, build API ✅.
 - **GitHub:** **belum bisa push** — firewall environment ini memblokir TLS ke `github.com`/`api.github.com` (TCP nyambung, TLS di-drop). Internet umum jalan (cli.github.com & Cloudflare OK). Token & `gh` 2.94 sudah siap. Tindakan: buka firewall (allowlist github.com, api.github.com, codeload.github.com, *.githubusercontent.com:443) ATAU push dari laptop. Backup off-site jadi PR penting — sementara hanya ada satu salinan di server ini.
@@ -69,7 +69,7 @@
 
 - [x] **1a** `packages/shared` — skema zod + error codes + enum untuk auth & school (kontrak data, belum ada logika)
 - [x] **1b** Auth inti — JWT access+refresh rotating, `Session`, login (siswa NIS+schoolId / dewasa HP-email), lockout 5×→15 mnt, password policy, first-login (ganti pw + setuju ToS)
-- [ ] **1c** RBAC — guard `@Roles` + `@Scope`, enforce scope (guru→kelasnya, admin→sekolahnya), 403 + AuditLog
+- [x] **1c** RBAC — guard `@Roles` + `@Scope`, enforce scope (guru→kelasnya, admin→sekolahnya, siswa→diri, ortu→anak, HQ→global), 403 + AuditLog append-only
 - [ ] **1d** Sesi & peran — batas perangkat (siswa 2 / lain 3), refresh reuse-detection→revoke semua, role-switch (linkRoles), list/revoke sesi
 - [ ] **1e** Provisioning — HQ buat sekolah, pairing token Box, akun admin (sekali tampil), setting sekolah, CRUD kelas, wizard kenaikan kelas (preview→confirm)
 - [ ] **1f** Impor XLSX — job BullMQ + validasi per-baris + laporan error ramah + idempotent + **penyamaran NIS** (hash berkunci per sekolah)
@@ -124,6 +124,30 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-14 — Fase 1c: RBAC (hak akses) + Audit append-only
+
+**Yang dikerjakan:** Membangun "penjaga pintu" hak akses. Tiap endpoint nanti bisa diberi label peran (`@Roles`) dan batas data (`@Scope`). Saat ada permintaan, penjaga (`RolesGuard`) memastikan: (1) peran pemanggil termasuk yang diizinkan, dan (2) data yang disentuh masih dalam jangkauannya — **guru hanya kelas yang ia ampu (wali), admin/kepsek hanya sekolahnya, siswa hanya dirinya, ortu hanya anaknya yang tertaut, HQ hanya area global**. Kalau melanggar → ditolak **403** + otomatis **dicatat di Audit Log**. Sekalian saya buat penulis Audit Log yang **append-only** (cuma bisa menambah, tak bisa diubah/dihapus) — ini melunasi utang dari 0d.
+
+**File yang dibuat/diubah:**
+- `apps/api/src/common/rbac/` — **(baru)** `roles.decorator.ts` (@Roles), `scope.decorator.ts` (@Scope), `scope.service.ts` (resolusi kepemilikan kelas/sekolah/anak via DB), `roles.guard.ts` (penjaga otorisasi), `rbac.module.ts` (global).
+- `apps/api/src/common/audit/` — **(baru)** `audit.service.ts` (append-only — hanya `write()`), `audit.module.ts` (global).
+- `apps/api/src/app.module.ts` — pasang AuditModule & RbacModule.
+- Tes: `roles.guard.test.ts` (6), `scope.service.test.ts` (9).
+
+**Keputusan kecil:** (1) Penulisan audit tidak boleh menggagalkan operasi utama — kalau gagal, error ditelan + dicatat ke log (audit bersifat pendukung). (2) `RolesGuard` dipakai BERSAMA `JwtAuthGuard` (autentikasi dulu, baru otorisasi). (3) Endpoint tanpa label @Roles/@Scope = lolos otorisasi (cukup autentikasi) — supaya tidak memaksa label di tempat yang tak perlu. (4) HQ TIDAK otomatis lolos scope sekolah/kelas/diri (sesuai ADR-005: HQ tak boleh PII siswa) — HQ hanya untuk scope global.
+
+**Utang baru:** "Guru pengampu" selain wali kelas belum bisa dicek karena skema BAGIAN 6 hanya punya `Class.homeroomTeacherId` (tak ada tabel pengampu). Untuk sekarang scope kelas bagi guru = wali kelas saja. Dicatat juga di komentar `scope.service.ts`. Perlu tabel pengampu bila fitur multi-guru per kelas dibutuhkan (kemungkinan Fase 2).
+
+**Sudah dibuktikan jalan?** Ya: tes unit menyeluruh untuk guard & scope (peran salah→403+audit, scope sekolah/diri/anak/kelas benar & salah) — **api 30/30, shared 24/24** (total 54). typecheck 4/4 ✅, build API ✅, lint ✅. App **boot bersih** dengan AuditModule & RbacModule ter-load. *Validasi IDOR end-to-end lewat HTTP nyata (QA-1) menyusul di 1k saat endpoint sekolah sudah ada.*
+
+**Sudah di-commit?** Ya — `feat(rbac): roles+scope guard with audit-logged denials, append-only AuditService (1c)`.
+
+**Status:** SELESAI.
+
+**Langkah berikutnya:** Potongan **1d** — batas perangkat, refresh reuse-detection, role-switch, daftar/revoke sesi. Tunggu aba-aba pemilik.
 
 -----
 
