@@ -17,9 +17,9 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** Fase 0 (Pondasi) → potongan **0a–0i SELESAI**. ✅
-- **Sedang menuju:** potongan **0j** (terakhir Fase 0) — GitHub Actions CI (lint, typecheck, test, build). *Belum mulai; menunggu aba-aba pemilik.*
-- **Bukti terakhir yang berjalan:** seed (`pnpm --filter @magnoo/api db:seed`) mengisi DB — 1 sekolah, 1 kelas, 1 admin, 2 guru, 5 siswa, 2 ortu, 2 tautan ortu-anak; idempotent (jalan ulang jumlah tetap); siswa terbukti TANPA nama/HP/email (ADR-005); password argon2id.
+- **Posisi sekarang:** **FASE 0 (Pondasi) SELESAI** — potongan **0a–0j semua ✅**. Pondasi monorepo tuntas.
+- **Sedang menuju:** **Fase 1** — Akun & pintu masuk (auth, RBAC, provisioning, impor XLSX, invite code ortu). *Belum mulai; menunggu aba-aba pemilik.* Di sinilah keputusan "pseudonim NIS" (lihat Ide & Utang) harus diputuskan.
+- **Bukti terakhir yang berjalan:** CI (`.github/workflows/ci.yml`) — seluruh langkah lulus lokal: node job (lint ✅, typecheck ✅, test 8/8 ✅, build ✅) + flutter job (analyze "No issues" ✅, test 1/1 ✅). Catatan: centang hijau di GitHub butuh repo di-push (belum ada remote).
 - **Catatan infra:** PostgreSQL dev kini lewat **compose resmi** (`infra/docker-compose.dev.yml`), volume bernama `magnoo-postgres-data` → **data persisten**. Nyalakan semua: `pnpm dev:infra` (atau `docker compose -f infra/docker-compose.dev.yml up --build`); matikan: `pnpm dev:infra:down`. API otomatis `prisma migrate deploy` saat start. Kontainer Postgres lama yang berdiri sendiri sudah dihapus (digantikan compose).
 - **Commit terakhir:** lihat `git log --oneline` di folder ini (potongan 0g ter-commit).
 - **Tanggal sesi terakhir:** 2026-06-14.
@@ -30,7 +30,7 @@
 
 ## 📋 PETA FASE (centang saat selesai — sumber: aplikasi.md BAGIAN 12)
 
-- [ ] **Fase 0** — Pondasi: kerangka monorepo, database, CI/CD
+- [x] **Fase 0** — Pondasi: kerangka monorepo, database, CI/CD
 - [ ] **Fase 1** — Akun & pintu masuk: login semua peran, impor siswa, kode undangan ortu
 - [ ] **Fase 2** — Jantung harian: absen QR, kabar ke ortu, izin, pengumuman
 - [ ] **Fase 3** — Magnoo Box & WiFi (bagian paling berisiko)
@@ -55,9 +55,9 @@
 - [x] **0g** `apps/mobile` (Flutter) — rangka + layar cek status API (Flutter dipasang saat potong ini)
 - [x] **0h** `infra/docker-compose.dev.yml` (postgres, redis, api, web)
 - [x] **0i** Skrip seed: 1 sekolah, 1 kelas, 1 admin, 5 siswa, 2 guru, 2 ortu
-- [ ] **0j** GitHub Actions (lint, typecheck, test, build)
+- [x] **0j** GitHub Actions (lint, typecheck, test, build)
 
-**DoD Fase 0:** `docker compose up` semua hijau; ketiga klien menampilkan status API; CI hijau.
+**DoD Fase 0:** `docker compose up` semua hijau ✅ (0h); ketiga klien menampilkan status API → web ✅ live (0h), portal ✅ & mobile ✅ (terbukti build/test di 0f/0g; tampilan live perlu HP/browser); CI ✅ semua langkah lulus lokal (push ke GitHub utk centang hijau resmi).
 
 -----
 
@@ -101,6 +101,34 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-14 — Fase 0j: CI GitHub Actions (penutup Fase 0)
+
+**Yang dikerjakan:** Memasang "penjaga otomatis" (CI) yang akan memeriksa kode setiap ada perubahan: memeriksa gaya kode (lint), memeriksa tipe data (typecheck), menjalankan tes, dan mencoba membangun semuanya. Kalau salah satu gagal, perubahan ditandai merah. Ada 2 pemeriksa: satu untuk bagian backend/web (Node), satu untuk aplikasi HP (Flutter).
+
+**File yang dibuat/diubah:**
+- `.github/workflows/ci.yml` — 2 job: **node** (install → generate Prisma → lint → typecheck → test → build; Node 20, pnpm 9, cache) & **flutter** (analyze + test; Flutter 3.44.2).
+- `apps/web/.eslintrc.json` — konfigurasi ESLint Next.js (`next/core-web-vitals`).
+- `apps/web/package.json` — `lint` jadi `next lint --max-warnings 0` (gagal kalau ada peringatan) + paket `eslint` & `eslint-config-next`.
+- `pnpm-lock.yaml` — terkunci ulang.
+
+**Keputusan kecil yang diambil:**
+- `next lint` sebelumnya minta setup interaktif → bakal bikin CI merah. Diperbaiki dengan menyiapkan konfigurasi ESLint Next.js standar (bukan menambal/menonaktifkan lint).
+- Job Flutter dipisah karena butuh toolchain berbeda (bukan Node).
+- `concurrency` dipasang agar run lama dibatalkan saat ada push baru (hemat menit CI).
+- Prisma Client digenerate sebelum typecheck/test/build api (kalau tidak, api gagal kompil).
+
+**Sudah dibuktikan jalan?** Ya — YAML divalidasi (parser Python, 2 job terbaca) DAN semua langkah pipeline dijalankan **lokal di mesin ini** dan lulus: lint ✅ ("No ESLint warnings or errors"), typecheck ✅ (api+web+portal+shared), test ✅ (**8/8**: shared 7, api 1), build ✅ (shared, api, web, portal), flutter analyze ✅ ("No issues found"), flutter test ✅ (**1/1**).
+
+**Catatan jujur (penting):** repo **belum tersambung ke GitHub** (tidak ada `git remote`). Jadi centang hijau resmi di tab Actions GitHub **belum muncul** — itu butuh pemilik membuat repo di GitHub lalu `git push`. Yang sudah pasti: begitu di-push, semua langkah CI akan jalan karena terbukti lulus lokal.
+
+**Sudah di-commit?** Ya — `ci: GitHub Actions pipeline (node lint/typecheck/test/build + flutter analyze/test) + web eslint setup (Fase 0j)`.
+
+**Status:** Selesai (potongan 0j dari 10). **🎉 FASE 0 TUNTAS** — pondasi monorepo lengkap.
+
+**Langkah berikutnya:** **Fase 1** — Auth, RBAC, provisioning, impor XLSX, invite code ortu. Sebelum mulai: baca BAGIAN 7 aplikasi.md, dan **putuskan skema pseudonim NIS** (lihat Ide & Utang). Menunggu aba-aba pemilik. Disarankan juga: sambungkan repo ke GitHub agar CI berjalan resmi.
 
 -----
 
