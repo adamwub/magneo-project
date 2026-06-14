@@ -17,10 +17,10 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** Fase 0 (Pondasi) → potongan **0a & 0b SELESAI**. ✅
-- **Sedang menuju:** potongan **0c** — `apps/api` (NestJS): rangka + pembaca `.env` + endpoint `/health` + stub 12 modul. *Belum mulai; menunggu aba-aba pemilik.*
-- **Bukti terakhir yang berjalan:** `@magnoo/shared` — typecheck hijau, 7/7 tes lulus, build (tsup) sukses, generator Dart menghasilkan `generated/dart/magnoo_models.dart` (6 enum + 6 model).
-- **Commit terakhir:** lihat `git log --oneline` di folder ini (potongan 0b ter-commit).
+- **Posisi sekarang:** Fase 0 (Pondasi) → potongan **0a, 0b & 0c SELESAI**. ✅
+- **Sedang menuju:** potongan **0d** — Prisma + seluruh skema database BAGIAN 6 + migrasi pertama (butuh PostgreSQL; pakai Docker). *Belum mulai; menunggu aba-aba pemilik.*
+- **Bukti terakhir yang berjalan:** `apps/api` — server NestJS boot, `GET /health` membalas `{"status":"ok"}` HTTP 200, 13 modul termuat, prefix `/api/v1` aktif. typecheck/build/test hijau.
+- **Commit terakhir:** lihat `git log --oneline` di folder ini (potongan 0c ter-commit).
 - **Tanggal sesi terakhir:** 2026-06-14.
 - **Peta lengkap potongan Fase 0:** lihat bagian "🧱 RENCANA FASE 0" di bawah (centang = selesai).
 - **Catatan lingkungan:** perkakas (Git/Node20/pnpm9/Docker) sudah terpasang di server. Flutter dipasang nanti (potong 0g). Dokumen "manusia" (21 file) tertata di folder `00–05` DI LUAR repo ini; folder coding sengaja dijaga bersih (kode + 3 file inti saja).
@@ -47,7 +47,7 @@
 
 - [x] **0a** Pasang perkakas + `git init` + kerangka monorepo (BAGIAN 5)
 - [x] **0b** `packages/shared` — skema zod inti (auth, error codes, attendance) + skrip generate model Dart
-- [ ] **0c** `apps/api` (NestJS) — rangka + pembaca `.env` + endpoint `/health` + stub 12 modul
+- [x] **0c** `apps/api` (NestJS) — rangka + pembaca `.env` + endpoint `/health` + stub 13 modul
 - [ ] **0d** Prisma + seluruh skema database BAGIAN 6 + migrasi pertama
 - [ ] **0e** `apps/web` (Next.js) — rangka + halaman cek status API
 - [ ] **0f** `apps/portal` (Preact) — rangka super ringan + cek status (<200KB)
@@ -94,6 +94,31 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-14 — Fase 0c: rangka backend apps/api (NestJS)
+
+**Yang dikerjakan:** Membuat "mesin utama" aplikasi (backend) dalam bentuk rangka. Dia sudah bisa dinyalakan dan menjawab "saya sehat" lewat alamat `/health`. Juga sudah ada 13 "ruang kosong" (modul) — tempat fitur-fitur nanti dipasang satu per satu. Backend juga sudah membaca berkas pengaturan `.env` dan menolak menyala kalau pengaturannya salah.
+
+**File yang dibuat:**
+- `apps/api/` — `package.json`, `tsconfig.json`, `tsconfig.build.json`, `nest-cli.json`, `vitest.config.ts`, `.env.example`.
+- `src/main.ts` (titik nyala server), `src/app.module.ts` (perakit), `src/config/env.ts` (pembaca + pemeriksa `.env` pakai zod).
+- `src/health/` — controller + module + tes untuk `/health`.
+- `src/modules/<13 modul>/<nama>.module.ts` — stub kosong: auth, school, attendance, comms, ai, gamification, ads, career, sync, notification, analytics, billing, feature-flags.
+
+**Keputusan kecil yang diambil:**
+- `/health` sengaja TIDAK ikut prefix `/api/v1` supaya gampang dicek oleh infra & klien.
+- Di Fase 0c env yang wajib hanya `NODE_ENV` & `PORT` (default 3000); DATABASE_URL dll. dibuat opsional dulu, dijadikan wajib di fase yang memakainya (0d).
+- Backend menyambung ke kamus bersama `@magnoo/shared` (memakai konstanta `API_PREFIX`) — membuktikan paket bersama benar-benar terhubung.
+
+**Sudah dibuktikan jalan?** Ya — server dinyalakan sungguhan: log NestJS memuat 13 modul, dan `curl http://localhost:3000/health` membalas `{"status":"ok","service":"magnoo-api",...}` dengan HTTP 200. typecheck hijau, `nest build` sukses, 1/1 tes lulus.
+
+**Sudah di-commit?** Ya — `feat(api): NestJS skeleton with health endpoint, env loader, and 13 module stubs (Fase 0c)`.
+
+**Status:** Selesai (potongan 0c dari 10).
+
+**Langkah berikutnya:** Potongan **0d** — Prisma + seluruh skema database BAGIAN 6 + migrasi pertama (butuh PostgreSQL via Docker). Menunggu aba-aba pemilik.
 
 -----
 
