@@ -17,9 +17,9 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** Fase 0 (Pondasi) → potongan **0a–0h SELESAI**. ✅
-- **Sedang menuju:** potongan **0i** — skrip seed (1 sekolah, 1 kelas, 1 admin, 5 siswa, 2 guru, 2 ortu). *Belum mulai; menunggu aba-aba pemilik.*
-- **Bukti terakhir yang berjalan:** `docker compose up` seluruh stack **HIJAU** — 4 kontainer healthy (postgres, redis, api, web); `curl :3000/health` HTTP 200; `curl :3001` HTTP 200 menampilkan "API terhubung · magnoo-api" (web → api → db tersambung).
+- **Posisi sekarang:** Fase 0 (Pondasi) → potongan **0a–0i SELESAI**. ✅
+- **Sedang menuju:** potongan **0j** (terakhir Fase 0) — GitHub Actions CI (lint, typecheck, test, build). *Belum mulai; menunggu aba-aba pemilik.*
+- **Bukti terakhir yang berjalan:** seed (`pnpm --filter @magnoo/api db:seed`) mengisi DB — 1 sekolah, 1 kelas, 1 admin, 2 guru, 5 siswa, 2 ortu, 2 tautan ortu-anak; idempotent (jalan ulang jumlah tetap); siswa terbukti TANPA nama/HP/email (ADR-005); password argon2id.
 - **Catatan infra:** PostgreSQL dev kini lewat **compose resmi** (`infra/docker-compose.dev.yml`), volume bernama `magnoo-postgres-data` → **data persisten**. Nyalakan semua: `pnpm dev:infra` (atau `docker compose -f infra/docker-compose.dev.yml up --build`); matikan: `pnpm dev:infra:down`. API otomatis `prisma migrate deploy` saat start. Kontainer Postgres lama yang berdiri sendiri sudah dihapus (digantikan compose).
 - **Commit terakhir:** lihat `git log --oneline` di folder ini (potongan 0g ter-commit).
 - **Tanggal sesi terakhir:** 2026-06-14.
@@ -54,7 +54,7 @@
 - [x] **0f** `apps/portal` (Preact) — rangka super ringan + cek status (<200KB)
 - [x] **0g** `apps/mobile` (Flutter) — rangka + layar cek status API (Flutter dipasang saat potong ini)
 - [x] **0h** `infra/docker-compose.dev.yml` (postgres, redis, api, web)
-- [ ] **0i** Skrip seed: 1 sekolah, 1 kelas, 1 admin, 5 siswa, 2 guru, 2 ortu
+- [x] **0i** Skrip seed: 1 sekolah, 1 kelas, 1 admin, 5 siswa, 2 guru, 2 ortu
 - [ ] **0j** GitHub Actions (lint, typecheck, test, build)
 
 **DoD Fase 0:** `docker compose up` semua hijau; ketiga klien menampilkan status API; CI hijau.
@@ -72,6 +72,7 @@
 - **Utang (0d):** UUID dibuat di aplikasi; bila ingin persis spec (`gen_random_uuid()` sisi DB), ganti `@default(uuid())` → `@default(dbgenerated("gen_random_uuid()")) @db.Uuid` (butuh migrasi).
 - **Utang (0d):** nilai enum `RewardType/RedemptionStatus/PartnerStatus/JobStatus` dipilih sendiri — konfirmasi/sesuaikan saat fitur terkait dibangun (Fase 5 & 7).
 - **Utang (0g):** model Dart masih DISALIN manual dari `packages/shared/generated` ke `apps/mobile/lib/generated`. Jadikan langkah build otomatis (skrip generate menulis langsung ke mobile, atau melos hook) saat mulai garap layar HP sungguhan (Fase 1).
+- **KEPUTUSAN tertunda → Fase 1 (0i):** Bagaimana NIS siswa disimpan di cloud. Hasil analisis spec: ADR-005 melarang NIS *mentah* di cloud, TAPI Guardrail #13.2 mengizinkan NIS di cloud *asal di-pseudonim*, dan login 7.2 butuh siswa login pakai NIS. **Rekomendasi (belum diimplementasi):** kolom `User.username` siswa = NIS yang sudah disamarkan (mis. hash ber-kunci per sekolah), NIS asli hanya di Box (`student_pii.nis`). Saat login: siswa ketik NIS asli → cloud samarkan dgn cara sama → cocokkan. **Seed 0i sengaja TIDAK mengunci skema ini** — pakai kode palsu `siswa-demo-N`. Putuskan & implementasi saat membangun auth + impor XLSX di Fase 1.
 
 -----
 
@@ -100,6 +101,32 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-14 — Fase 0i: skrip seed (data contoh)
+
+**Yang dikerjakan:** Membuat satu perintah yang mengisi database dengan data contoh, supaya fase berikutnya punya bahan untuk diuji: 1 sekolah, 1 kelas, 1 admin, 2 guru, 5 siswa, 2 orang tua (masing-masing ditautkan ke satu siswa). Sebelum koding, dilakukan analisis mendalam soal cara menyimpan data siswa agar tidak melanggar perlindungan data anak (lihat keputusan di bawah).
+
+**File yang dibuat/diubah:**
+- `apps/api/prisma/seed.ts` — skrip seed (idempotent: tiap baris di-upsert pakai id tetap → jalan ulang tidak menggandakan).
+- `apps/api/package.json` — perintah `db:seed`, konfigurasi `prisma.seed` (pakai `tsx`), + paket `tsx` (penjalan TS) & `@node-rs/argon2` (hash argon2id siap-pakai, tanpa kompilasi native).
+- `pnpm-lock.yaml` — terkunci ulang untuk 2 paket baru.
+
+**Keputusan kecil + analisis penting:**
+- **Perlindungan data anak (ADR-005 + Guardrail #13.2):** siswa di cloud HANYA UUID + atribut non-identitas (role, kelas, status). `displayName` = null, tanpa phone/email. Nama/NIS asli siswa = milik Box, bukan cloud.
+- **Analisis ketegangan spec NIS** (ADR-005 vs Guardrail #13.2 vs login 7.2): kesimpulan = NIS boleh di cloud asal di-pseudonim; NIS asli hanya di Box. **Tidak dikunci di 0i** — seed pakai kode palsu `siswa-demo-1..5`. Detail rekomendasi & untuk diputuskan di Fase 1 → lihat "Ide & Utang".
+- **Password argon2id** (BAGIAN 14), bukan teks polos (Guardrail #13.11). Password demo (terdokumentasi di skrip): `MagnooDemo#2026`. `mustChangePassword` = true (default) → wajib ganti saat login pertama.
+- Memakai id tetap (deterministik) untuk semua entitas demo supaya idempotent. Setelan sekolah memakai `SCHOOL_SETTING_DEFAULTS` dari `@magnoo/shared` (BAGIAN 10.1).
+- Seed ditaruh di `apps/api/prisma/seed.ts` (idiom Prisma, dekat skema & client) — bukan di `scripts/` akar; folder itu untuk skrip build/ops.
+
+**Sudah dibuktikan jalan?** Ya — `pnpm --filter @magnoo/api db:seed` di atas stack yang hidup menghasilkan: **1 sekolah, 1 kelas, 1 admin, 2 guru, 5 siswa, 2 ortu, 2 tautan ortu-anak**. Dibuktikan via query Postgres langsung: (1) **idempotent** — dijalankan dua kali, jumlah persis sama; (2) **privasi** — kelima siswa `displayName`/`phone`/`email` = NULL, semua punya `classId`; (3) **password** = `$argon2id$v=1...` (panjang 97), bukan teks polos; (4) tautan ortu-anak `status=ACTIVE`. `pnpm --filter @magnoo/api typecheck` tetap hijau.
+
+**Sudah di-commit?** Ya — `feat(api): idempotent seed (1 school, 1 class, admin, 2 teachers, 5 students, 2 parents) with PII-free students + argon2id (Fase 0i)`.
+
+**Status:** Selesai (potongan 0i dari 10). Tersisa **0j** (CI) untuk menutup Fase 0.
+
+**Langkah berikutnya:** Potongan **0j** — GitHub Actions (lint, typecheck, test, build). Menunggu aba-aba pemilik.
 
 -----
 
