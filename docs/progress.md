@@ -18,7 +18,7 @@
 - **Fase sekarang:** Fase 0 — sedang dikerjakan. Potongan **0a selesai** (perkakas + kerangka monorepo).
 - **Sesi terakhir:** 2026-06-14
 - **Langkah berikutnya:** Potongan **0b** — `packages/shared` (skema zod inti: auth, error codes, attendance) + skrip generate model Dart. (Menunggu aba-aba pemilik untuk lanjut.)
-- **Catatan penting yang sedang berlaku:** Server kerja ini awalnya kosong perkakas; sudah dipasang Git/Node/pnpm/Docker. Node 20 dipakai (pnpm terbaru butuh Node 22), jadi pnpm dikunci ke versi 9. Flutter belum dipasang (sesuai keputusan: nanti saat menyentuh aplikasi HP).
+- **Catatan penting yang sedang berlaku:** Server kerja ini awalnya kosong perkakas; sudah dipasang Git/Node/pnpm/Docker. Node 20 dipakai (pnpm terbaru butuh Node 22), jadi pnpm dikunci ke versi 9. Flutter belum dipasang (sesuai keputusan: nanti saat menyentuh aplikasi HP). Penataan 21 dokumen "manusia" ke folder 00–05 (di luar repo) sudah selesai — folder coding ini tetap bersih.
 
 -----
 
@@ -33,6 +33,25 @@
 - [ ] **Fase 6** — Absensi wajah (setelah sistem stabil + izin ortu terkumpul)
 - [ ] **Fase 7** — Alumni & pusat karier
 - [ ] **Fase 8** — Analitik, deteksi dini siswa, riset, startup center
+
+-----
+
+## 🧱 RENCANA FASE 0 — 10 POTONGAN (disetujui pemilik 2026-06-14)
+
+> Dikerjakan berurutan. Tiap potong: kerjakan → buktikan jalan → catat di sini → commit. Berhenti & lapor sebelum potong berikutnya.
+
+- [x] **0a** Pasang perkakas + `git init` + kerangka monorepo (BAGIAN 5)
+- [ ] **0b** `packages/shared` — skema zod inti (auth, error codes, attendance) + skrip generate model Dart
+- [ ] **0c** `apps/api` (NestJS) — rangka + pembaca `.env` + endpoint `/health` + stub 12 modul
+- [ ] **0d** Prisma + seluruh skema database BAGIAN 6 + migrasi pertama
+- [ ] **0e** `apps/web` (Next.js) — rangka + halaman cek status API
+- [ ] **0f** `apps/portal` (Preact) — rangka super ringan + cek status (<200KB)
+- [ ] **0g** `apps/mobile` (Flutter) — rangka + layar cek status API (Flutter dipasang saat potong ini)
+- [ ] **0h** `infra/docker-compose.dev.yml` (postgres, redis, api, web)
+- [ ] **0i** Skrip seed: 1 sekolah, 1 kelas, 1 admin, 5 siswa, 2 guru, 2 ortu
+- [ ] **0j** GitHub Actions (lint, typecheck, test, build)
+
+**DoD Fase 0:** `docker compose up` semua hijau; ketiga klien menampilkan status API; CI hijau.
 
 -----
 
@@ -70,6 +89,26 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-14 — Housekeeping: penataan dokumen + bot unggah (di luar fase coding)
+
+**Yang dikerjakan:** Merapikan 21 dokumen "manusia" (strategi, legal, sekolah, mitra, keuangan) yang diunggah lewat bot Telegram ke folder-folder rapi **di luar** repo coding, sesuai `DAFTAR-ISI.md`. Bot Telegram dipakai sebagai jalur unggah; folder default-nya kini `_inbox`.
+
+**File yang dibuat/diubah:**
+- DI LUAR repo: folder `/root/00-Daftar-Isi` … `/root/05-Keuangan` (total 21 file tertata: 01=9, 02=4, 03=3, 04=3, 05=1, 00=1), `/root/_inbox`, dan skrip bot `/root/magnoo_bot.py`.
+- DI DALAM repo (1 perubahan): **hapus `DAFTAR-ISI.md` yang tanpa sengaja ter-commit** ke akar repo (bot sempat menyimpan ke sini sebelum dialihkan). Sekarang repo coding bersih dari dokumen manusia.
+
+**Keputusan kecil yang diambil:** Dokumen manusia TIDAK disimpan di dalam `magnoo-project` (sesuai DAFTAR-ISI.md: folder coding hanya kode + 3 file inti). Bot unggah diarahkan ke `_inbox`, file yang namanya dikenal otomatis dirutekan ke folder 00–05.
+
+**Sudah dibuktikan jalan?** Ya — audit ulang: 21/21 file ada di folder yang benar, 0 hilang, 0 tak terduga. `git status` repo bersih.
+
+**Sudah di-commit?** Ya — `chore: remove stray DAFTAR-ISI.md (belongs in human docs folder, not the coding repo)` (`4d26fb7`).
+
+**Status:** Selesai. Ini pekerjaan housekeeping, bukan bagian dari potongan Fase 0.
+
+**Langkah berikutnya:** Lanjut Fase 0b (menunggu aba-aba pemilik).
 
 -----
 
