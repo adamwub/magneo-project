@@ -13,12 +13,17 @@
 
 -----
 
-## 🧭 STATUS SAAT INI (selalu perbarui baris ini)
+## 🧭 STATUS SAAT INI — BACA INI DULU SETIAP SESI BARU
 
-- **Fase sekarang:** Fase 0 — sedang dikerjakan. Potongan **0a selesai** (perkakas + kerangka monorepo).
-- **Sesi terakhir:** 2026-06-14
-- **Langkah berikutnya:** Potongan **0b** — `packages/shared` (skema zod inti: auth, error codes, attendance) + skrip generate model Dart. (Menunggu aba-aba pemilik untuk lanjut.)
-- **Catatan penting yang sedang berlaku:** Server kerja ini awalnya kosong perkakas; sudah dipasang Git/Node/pnpm/Docker. Node 20 dipakai (pnpm terbaru butuh Node 22), jadi pnpm dikunci ke versi 9. Flutter belum dipasang (sesuai keputusan: nanti saat menyentuh aplikasi HP). Penataan 21 dokumen "manusia" ke folder 00–05 (di luar repo) sudah selesai — folder coding ini tetap bersih.
+> Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
+
+- **Posisi sekarang:** Fase 0 (Pondasi) → potongan **0a SELESAI**. ✅
+- **Sedang menuju:** potongan **0b** — `packages/shared` (skema zod inti: auth, error codes, attendance) + skrip generate model Dart. *Belum mulai; menunggu aba-aba pemilik.*
+- **Bukti terakhir yang berjalan:** `pnpm install` hijau, Docker `hello-world` jalan, repo bersih.
+- **Commit terakhir:** `6ac9eee` (jalankan `git log --oneline` di folder ini untuk riwayat lengkap).
+- **Tanggal sesi terakhir:** 2026-06-14.
+- **Peta lengkap potongan Fase 0:** lihat bagian "🧱 RENCANA FASE 0" di bawah (centang = selesai).
+- **Catatan lingkungan:** perkakas (Git/Node20/pnpm9/Docker) sudah terpasang di server. Flutter dipasang nanti (potong 0g). Dokumen "manusia" (21 file) tertata di folder `00–05` DI LUAR repo ini; folder coding sengaja dijaga bersih (kode + 3 file inti saja).
 
 -----
 
