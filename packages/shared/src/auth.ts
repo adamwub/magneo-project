@@ -13,12 +13,18 @@ const inviteCodeSchema = z
  * Catatan privasi: skema ini TIDAK memuat PII siswa (ADR-005). `displayName` hanya untuk dewasa.
  */
 
-/** POST /auth/login — {username|phone|email, password, deviceId, deviceName} */
+/**
+ * POST /auth/login — {username|phone|email, password, deviceId, deviceName}.
+ * `schoolId` dipakai saat login siswa (identifier = username/NIS): aplikasi HP siswa
+ * terikat pada satu sekolah, sehingga NIS dicocokkan dalam lingkup sekolah tsb
+ * (username siswa unik per sekolah, BAGIAN 6.1). Dewasa pakai phone/email global.
+ */
 export const loginRequestSchema = z
   .object({
     username: z.string().min(1).optional(),
     phone: z.string().min(1).optional(),
     email: z.string().email().optional(),
+    schoolId: z.string().min(1).optional(),
     password: z.string().min(1),
     deviceId: z.string().min(1),
     deviceName: z.string().optional(),
@@ -36,12 +42,16 @@ export const tokenPairSchema = z.object({
 });
 export type TokenPair = z.infer<typeof tokenPairSchema>;
 
-/** Respons login. */
+/**
+ * Respons login. First-login wajib ganti password DAN setujui ToS (BAGIAN 7.2),
+ * jadi klien diberi tahu lewat dua flag ini sebelum mengizinkan akses penuh.
+ */
 export const loginResponseSchema = z.object({
   accessToken: z.string(),
   refreshToken: z.string(),
   role: z.enum(ROLES),
   mustChangePassword: z.boolean(),
+  mustAcceptTos: z.boolean(),
 });
 export type LoginResponse = z.infer<typeof loginResponseSchema>;
 
@@ -58,9 +68,13 @@ export const passwordChangeRequestSchema = z.object({
 });
 export type PasswordChangeRequest = z.infer<typeof passwordChangeRequestSchema>;
 
-/** Klaim JWT access token (BAGIAN 7.1). */
+/**
+ * Klaim JWT access token (BAGIAN 7.1).
+ * `sid` = id sesi penerbit token, dipakai untuk "logout sesi ini" (BAGIAN 8.2).
+ */
 export const jwtClaimsSchema = z.object({
   sub: z.string(),
+  sid: z.string(),
   role: z.enum(ROLES),
   schoolId: z.string().nullable(),
   scopes: z.array(z.string()),

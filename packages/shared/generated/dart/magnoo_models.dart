@@ -110,16 +110,18 @@ class LoginRequest {
   final String? username;
   final String? phone;
   final String? email;
+  final String? schoolId;
   final String password;
   final String deviceId;
   final String? deviceName;
 
-  const LoginRequest({this.username, this.phone, this.email, required this.password, required this.deviceId, this.deviceName});
+  const LoginRequest({this.username, this.phone, this.email, this.schoolId, required this.password, required this.deviceId, this.deviceName});
 
   factory LoginRequest.fromJson(Map<String, dynamic> json) => LoginRequest(
       username: json['username'] == null ? null : json['username'] as String,
       phone: json['phone'] == null ? null : json['phone'] as String,
       email: json['email'] == null ? null : json['email'] as String,
+      schoolId: json['schoolId'] == null ? null : json['schoolId'] as String,
       password: json['password'] as String,
       deviceId: json['deviceId'] as String,
       deviceName: json['deviceName'] == null ? null : json['deviceName'] as String,
@@ -129,6 +131,7 @@ class LoginRequest {
       'username': username,
       'phone': phone,
       'email': email,
+      'schoolId': schoolId,
       'password': password,
       'deviceId': deviceId,
       'deviceName': deviceName,
@@ -140,14 +143,16 @@ class LoginResponse {
   final String refreshToken;
   final Role role;
   final bool mustChangePassword;
+  final bool mustAcceptTos;
 
-  const LoginResponse({required this.accessToken, required this.refreshToken, required this.role, required this.mustChangePassword});
+  const LoginResponse({required this.accessToken, required this.refreshToken, required this.role, required this.mustChangePassword, required this.mustAcceptTos});
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) => LoginResponse(
       accessToken: json['accessToken'] as String,
       refreshToken: json['refreshToken'] as String,
       role: Role.fromValue(json['role'] as String),
       mustChangePassword: json['mustChangePassword'] as bool,
+      mustAcceptTos: json['mustAcceptTos'] as bool,
       );
 
   Map<String, dynamic> toJson() => {
@@ -155,20 +160,23 @@ class LoginResponse {
       'refreshToken': refreshToken,
       'role': role.value,
       'mustChangePassword': mustChangePassword,
+      'mustAcceptTos': mustAcceptTos,
       };
 }
 
 class JwtClaims {
   final String sub;
+  final String sid;
   final Role role;
   final String? schoolId;
   final List<String> scopes;
   final List<Role> linkRoles;
 
-  const JwtClaims({required this.sub, required this.role, this.schoolId, required this.scopes, required this.linkRoles});
+  const JwtClaims({required this.sub, required this.sid, required this.role, this.schoolId, required this.scopes, required this.linkRoles});
 
   factory JwtClaims.fromJson(Map<String, dynamic> json) => JwtClaims(
       sub: json['sub'] as String,
+      sid: json['sid'] as String,
       role: Role.fromValue(json['role'] as String),
       schoolId: json['schoolId'] == null ? null : json['schoolId'] as String,
       scopes: (json['scopes'] as List).cast<String>(),
@@ -177,6 +185,7 @@ class JwtClaims {
 
   Map<String, dynamic> toJson() => {
       'sub': sub,
+      'sid': sid,
       'role': role.value,
       'schoolId': schoolId,
       'scopes': scopes,

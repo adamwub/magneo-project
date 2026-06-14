@@ -14,10 +14,15 @@ export const envSchema = z.object({
   // Wajib sejak Fase 0d (backend memerlukan database):
   DATABASE_URL: z.string().url(),
 
+  // Wajib sejak Fase 1b (auth): rahasia penanda-tangan token, min 32 karakter.
+  JWT_ACCESS_SECRET: z.string().min(32),
+  JWT_REFRESH_SECRET: z.string().min(32),
+  // Masa berlaku token (BAGIAN 7.1): access 1 jam, refresh 30 hari (dalam detik).
+  JWT_ACCESS_TTL_SEC: z.coerce.number().int().positive().default(60 * 60),
+  JWT_REFRESH_TTL_SEC: z.coerce.number().int().positive().default(60 * 60 * 24 * 30),
+
   // Disiapkan untuk fase berikut (opsional dulu):
   REDIS_URL: z.string().url().optional(),
-  JWT_ACCESS_SECRET: z.string().optional(),
-  JWT_REFRESH_SECRET: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

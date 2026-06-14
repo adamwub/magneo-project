@@ -17,10 +17,10 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1 potongan **1a ✅** (skema bersama auth & sekolah). Lihat "RENCANA FASE 1" di bawah.
-- **Sedang menuju:** **Potongan 1b** — Auth inti (JWT access+refresh rotating, `Session`, login siswa NIS / dewasa HP-email, lockout 5×, password policy, first-login ganti pw + setuju ToS). *Menunggu aba-aba pemilik sebelum mulai.*
-- **Keputusan NIS sudah DIAMBIL (2026-06-14):** NIS siswa **DISAMARKAN** di cloud (hash berkunci per sekolah jadi `User.username`), NIS mentah TIDAK pernah disimpan di cloud. Detail di "Keputusan Penting" di bawah.
-- **Bukti terakhir yang berjalan:** `packages/shared` — typecheck ✅, test **24/24 ✅** (auth 10, school 11, errors 3), generate Dart ✅ (16 model + 8 enum).
+- **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1: **1a ✅** (skema bersama), **1b ✅** (auth inti: login, token, sesi, first-login). Lihat "RENCANA FASE 1" di bawah.
+- **Sedang menuju:** **Potongan 1c** — RBAC: guard `@Roles` + `@Scope`, enforce scope (guru→kelasnya, admin→sekolahnya), pelanggaran → 403 + AuditLog. *Menunggu aba-aba pemilik sebelum mulai.*
+- **Keputusan NIS sudah DIAMBIL (2026-06-14):** NIS siswa **DISAMARKAN** di cloud (hash berkunci per sekolah jadi `User.username`), NIS mentah TIDAK pernah disimpan di cloud. Detail di "Keputusan Penting" di bawah. *Penerapan transform NIS→samaran masih menyusul di 1f (impor) & disambung ke login; saat ini login siswa mencocokkan `username` apa adanya + butuh `schoolId`.*
+- **Bukti terakhir yang berjalan:** API auth diuji **terhadap database nyata** (port lokal 3100): login guru & siswa ✅ (token JWT terbit, klaim sub/sid/role/schoolId benar), password salah → error generik ✅, refresh berputar (token baru) ✅, endpoint terproteksi tanpa token → 401 ✅, setuju ToS → 204 & re-login `mustAcceptTos:false` ✅, login siswa tanpa schoolId ditolak ✅. Tes unit: shared 24/24, api 15/15 (lockout, rotasi, dll). typecheck 4/4 ✅, build API ✅.
 - **GitHub:** **belum bisa push** — firewall environment ini memblokir TLS ke `github.com`/`api.github.com` (TCP nyambung, TLS di-drop). Internet umum jalan (cli.github.com & Cloudflare OK). Token & `gh` 2.94 sudah siap. Tindakan: buka firewall (allowlist github.com, api.github.com, codeload.github.com, *.githubusercontent.com:443) ATAU push dari laptop. Backup off-site jadi PR penting — sementara hanya ada satu salinan di server ini.
 - **Catatan infra:** PostgreSQL dev kini lewat **compose resmi** (`infra/docker-compose.dev.yml`), volume bernama `magnoo-postgres-data` → **data persisten**. Nyalakan semua: `pnpm dev:infra` (atau `docker compose -f infra/docker-compose.dev.yml up --build`); matikan: `pnpm dev:infra:down`. API otomatis `prisma migrate deploy` saat start. Kontainer Postgres lama yang berdiri sendiri sudah dihapus (digantikan compose).
 - **Commit terakhir:** lihat `git log --oneline` (1a = `feat(shared): Fase 1 auth & school schemas`).
@@ -68,7 +68,7 @@
 > Backend dulu, baru tampilan, baru uji E2E. Tiap potong: kerjakan → buktikan jalan → catat → commit → berhenti & lapor. Sumber: aplikasi.md BAGIAN 7, 8.2 (auth & school), 12 (Fase 1), 15 (QA-1, QA-2).
 
 - [x] **1a** `packages/shared` — skema zod + error codes + enum untuk auth & school (kontrak data, belum ada logika)
-- [ ] **1b** Auth inti — JWT access+refresh rotating, `Session`, login (siswa NIS / dewasa HP-email), lockout 5×→15 mnt, password policy, first-login (ganti pw + setuju ToS)
+- [x] **1b** Auth inti — JWT access+refresh rotating, `Session`, login (siswa NIS+schoolId / dewasa HP-email), lockout 5×→15 mnt, password policy, first-login (ganti pw + setuju ToS)
 - [ ] **1c** RBAC — guard `@Roles` + `@Scope`, enforce scope (guru→kelasnya, admin→sekolahnya), 403 + AuditLog
 - [ ] **1d** Sesi & peran — batas perangkat (siswa 2 / lain 3), refresh reuse-detection→revoke semua, role-switch (linkRoles), list/revoke sesi
 - [ ] **1e** Provisioning — HQ buat sekolah, pairing token Box, akun admin (sekali tampil), setting sekolah, CRUD kelas, wizard kenaikan kelas (preview→confirm)
@@ -124,6 +124,35 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-14 — Fase 1b: Auth inti (login, token, sesi, first-login)
+
+**Yang dikerjakan:** Membuat sistem login sungguhan. Siswa login pakai NIS + kode sekolah (aplikasi HP terikat satu sekolah); guru/admin/ortu pakai email/HP. Saat berhasil, server menerbitkan dua "tiket": **access token** (berlaku 1 jam, untuk akses harian) dan **refresh token** (30 hari, untuk perpanjang tanpa login ulang). Refresh token disimpan **hanya hash-nya** di tabel sesi (kalau DB bocor, token mentah tidak ikut). Tiap perpanjangan, token diputar (yang lama tak berlaku). Pengaman: salah password **5×** → akun **terkunci 15 menit**; pesan error sengaja tidak membedakan "user salah" vs "password salah" (biar tidak bisa ditebak). Alur pertama-login: wajib ganti password + setujui Syarat & Ketentuan (ToS). Password divalidasi (min 8, tolak yang umum/lemah & yang sama dengan identitas). Password di-hash argon2id.
+
+**File yang dibuat/diubah:**
+- `apps/api/src/modules/auth/` — **(baru)** `password.ts` (kebijakan + hash), `tokens.ts` (refresh acak + hash), `auth.service.ts` (logika inti), `auth.controller.ts` (endpoint), `jwt-auth.guard.ts` (verifikasi token), `current-user.decorator.ts`, + isi `auth.module.ts`.
+- `apps/api/src/common/` — **(baru)** `api-error.ts` (format error standar BAGIAN 8.1) & `zod-validation.pipe.ts` (validasi body pakai zod).
+- `apps/api/src/config/env.ts` — `JWT_ACCESS_SECRET`/`JWT_REFRESH_SECRET` jadi wajib (min 32) + masa berlaku token.
+- `apps/api/.env.example`, `apps/api/.env` (lokal), `infra/docker-compose.dev.yml` — tambah secret JWT dev.
+- `apps/api/package.json` — tambah `@nestjs/jwt`.
+- `packages/shared/src/auth.ts` — `loginRequest` tambah `schoolId` (opsional, utk siswa); `loginResponse` tambah `mustAcceptTos`; klaim JWT tambah `sid` (id sesi, utk logout). Regenerate model Dart.
+- Tes: `password.test.ts`, `auth.service.test.ts`.
+
+**Endpoint aktif:** `POST /api/v1/auth/login`, `/refresh`, `/logout`, `/password/change`, `/tos/accept`.
+
+**Keputusan kecil:** (1) Login siswa butuh `schoolId` karena NIS hanya unik per sekolah & aplikasi HP siswa terikat satu sekolah. (2) Refresh token = string acak buram (bukan JWT), hash SHA-256 di DB. (3) `sid` (id sesi) ditaruh di access token agar "logout sesi ini" bisa tahu sesi mana. (4) Status 423 (Locked) ditulis manual karena tak ada di enum Nest versi ini. (5) Otorisasi peran/scope (RBAC) sengaja BELUM di sini — itu potongan 1c; `scopes`/`linkRoles` di token sementara kosong.
+
+**Utang baru:** Kebijakan password belum bisa menolak "password = tanggal lahir" (spec 7.2) karena tanggal lahir adalah PII yang tak disimpan di cloud (ADR-005) — hanya bisa dicek di Box (fase lanjut). Dicatat juga di komentar `password.ts`.
+
+**Sudah dibuktikan jalan?** Ya, dua lapis. (a) **Tes otomatis:** shared 24/24, api 15/15 (termasuk: terkunci, gagal ke-5 mengunci, error generik, rotasi refresh, logout). typecheck 4/4, build API sukses. (b) **Uji langsung ke database nyata** (API dijalankan lokal di :3100 atas Postgres dev): login guru & siswa berhasil terbitkan token; password salah → `INVALID_CREDENTIALS` generik; refresh → token baru; tos/accept tanpa token → 401, dengan token → 204; re-login menunjukkan `mustAcceptTos` berubah jadi false; login siswa tanpa schoolId ditolak.
+
+**Sudah di-commit?** Ya — `feat(auth): core auth — login, JWT, sessions, first-login (1b)`.
+
+**Status:** SELESAI.
+
+**Langkah berikutnya:** Potongan **1c** — RBAC (guard peran + scope, 403 + AuditLog). Tunggu aba-aba pemilik.
 
 -----
 

@@ -48,6 +48,9 @@ services:
       # Nama service di jaringan compose dipakai sebagai host (bukan localhost).
       DATABASE_URL: postgresql://magnoo:magnoo@postgres:5432/magnoo
       REDIS_URL: redis://redis:6379
+      # Dev only — di produksi WAJIB diganti rahasia acak (BAGIAN 14).
+      JWT_ACCESS_SECRET: dev-only-access-secret-change-me-32chars-min
+      JWT_REFRESH_SECRET: dev-only-refresh-secret-change-me-32chars-min
     ports:
       - "3000:3000"
     depends_on:
