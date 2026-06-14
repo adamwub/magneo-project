@@ -81,6 +81,31 @@ enum FinalAtt {
       values.firstWhere((e) => e.value == v);
 }
 
+enum LinkStatus {
+  active('ACTIVE'),
+  revoked('REVOKED');
+
+  const LinkStatus(this.value);
+  final String value;
+
+  static LinkStatus fromValue(String v) =>
+      values.firstWhere((e) => e.value == v);
+}
+
+enum ConsentType {
+  generalData('GENERAL_DATA'),
+  face('FACE'),
+  publication('PUBLICATION'),
+  alumniCareer('ALUMNI_CAREER'),
+  tos('TOS');
+
+  const ConsentType(this.value);
+  final String value;
+
+  static ConsentType fromValue(String v) =>
+      values.firstWhere((e) => e.value == v);
+}
+
 class LoginRequest {
   final String? username;
   final String? phone;
@@ -234,5 +259,166 @@ class DailyAttendanceStatus {
       'schoolId': schoolId,
       'date': date,
       'finalStatus': finalStatus.value,
+      };
+}
+
+class PasswordChangeRequest {
+  final String oldPassword;
+  final String newPassword;
+
+  const PasswordChangeRequest({required this.oldPassword, required this.newPassword});
+
+  factory PasswordChangeRequest.fromJson(Map<String, dynamic> json) => PasswordChangeRequest(
+      oldPassword: json['oldPassword'] as String,
+      newPassword: json['newPassword'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+      'oldPassword': oldPassword,
+      'newPassword': newPassword,
+      };
+}
+
+class ParentRegisterRequest {
+  final String phone;
+
+  const ParentRegisterRequest({required this.phone});
+
+  factory ParentRegisterRequest.fromJson(Map<String, dynamic> json) => ParentRegisterRequest(
+      phone: json['phone'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+      'phone': phone,
+      };
+}
+
+class OtpSentResponse {
+  final int expiresInSec;
+
+  const OtpSentResponse({required this.expiresInSec});
+
+  factory OtpSentResponse.fromJson(Map<String, dynamic> json) => OtpSentResponse(
+      expiresInSec: json['expiresInSec'] as int,
+      );
+
+  Map<String, dynamic> toJson() => {
+      'expiresInSec': expiresInSec,
+      };
+}
+
+class ParentVerifyOtpRequest {
+  final String phone;
+  final String otp;
+
+  const ParentVerifyOtpRequest({required this.phone, required this.otp});
+
+  factory ParentVerifyOtpRequest.fromJson(Map<String, dynamic> json) => ParentVerifyOtpRequest(
+      phone: json['phone'] as String,
+      otp: json['otp'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+      'phone': phone,
+      'otp': otp,
+      };
+}
+
+class TempTokenResponse {
+  final String tempToken;
+  final int expiresInSec;
+
+  const TempTokenResponse({required this.tempToken, required this.expiresInSec});
+
+  factory TempTokenResponse.fromJson(Map<String, dynamic> json) => TempTokenResponse(
+      tempToken: json['tempToken'] as String,
+      expiresInSec: json['expiresInSec'] as int,
+      );
+
+  Map<String, dynamic> toJson() => {
+      'tempToken': tempToken,
+      'expiresInSec': expiresInSec,
+      };
+}
+
+class ParentLinkChildRequest {
+  final String inviteCode;
+
+  const ParentLinkChildRequest({required this.inviteCode});
+
+  factory ParentLinkChildRequest.fromJson(Map<String, dynamic> json) => ParentLinkChildRequest(
+      inviteCode: json['inviteCode'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+      'inviteCode': inviteCode,
+      };
+}
+
+class LinkChildResponse {
+  final String studentUserId;
+  final LinkStatus status;
+
+  const LinkChildResponse({required this.studentUserId, required this.status});
+
+  factory LinkChildResponse.fromJson(Map<String, dynamic> json) => LinkChildResponse(
+      studentUserId: json['studentUserId'] as String,
+      status: LinkStatus.fromValue(json['status'] as String),
+      );
+
+  Map<String, dynamic> toJson() => {
+      'studentUserId': studentUserId,
+      'status': status.value,
+      };
+}
+
+class RoleSwitchRequest {
+  final String targetUserId;
+
+  const RoleSwitchRequest({required this.targetUserId});
+
+  factory RoleSwitchRequest.fromJson(Map<String, dynamic> json) => RoleSwitchRequest(
+      targetUserId: json['targetUserId'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+      'targetUserId': targetUserId,
+      };
+}
+
+class TosAcceptRequest {
+  final String docVersion;
+
+  const TosAcceptRequest({required this.docVersion});
+
+  factory TosAcceptRequest.fromJson(Map<String, dynamic> json) => TosAcceptRequest(
+      docVersion: json['docVersion'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+      'docVersion': docVersion,
+      };
+}
+
+class Session {
+  final String id;
+  final String? deviceName;
+  final String createdAt;
+  final bool current;
+
+  const Session({required this.id, this.deviceName, required this.createdAt, required this.current});
+
+  factory Session.fromJson(Map<String, dynamic> json) => Session(
+      id: json['id'] as String,
+      deviceName: json['deviceName'] == null ? null : json['deviceName'] as String,
+      createdAt: json['createdAt'] as String,
+      current: json['current'] as bool,
+      );
+
+  Map<String, dynamic> toJson() => {
+      'id': id,
+      'deviceName': deviceName,
+      'createdAt': createdAt,
+      'current': current,
       };
 }

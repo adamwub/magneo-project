@@ -1,5 +1,19 @@
 import type { z } from "zod";
-import { loginRequestSchema, loginResponseSchema, jwtClaimsSchema } from "../auth.js";
+import {
+  loginRequestSchema,
+  loginResponseSchema,
+  jwtClaimsSchema,
+  passwordChangeRequestSchema,
+  parentRegisterRequestSchema,
+  otpSentResponseSchema,
+  parentVerifyOtpRequestSchema,
+  tempTokenResponseSchema,
+  parentLinkChildRequestSchema,
+  linkChildResponseSchema,
+  roleSwitchRequestSchema,
+  tosAcceptRequestSchema,
+  sessionSchema,
+} from "../auth.js";
 import {
   qrCheckinRequestSchema,
   attendanceEventSchema,
@@ -22,4 +36,15 @@ export const MODEL_REGISTRY: ModelEntry[] = [
   { dartName: "QrCheckinRequest", schema: qrCheckinRequestSchema },
   { dartName: "AttendanceEvent", schema: attendanceEventSchema },
   { dartName: "DailyAttendanceStatus", schema: dailyAttendanceStatusSchema },
+  // Fase 1 — alur HP: ganti password, registrasi ortu + OTP, link anak, role switch, ToS, sesi.
+  { dartName: "PasswordChangeRequest", schema: passwordChangeRequestSchema },
+  { dartName: "ParentRegisterRequest", schema: parentRegisterRequestSchema },
+  { dartName: "OtpSentResponse", schema: otpSentResponseSchema },
+  { dartName: "ParentVerifyOtpRequest", schema: parentVerifyOtpRequestSchema },
+  { dartName: "TempTokenResponse", schema: tempTokenResponseSchema },
+  { dartName: "ParentLinkChildRequest", schema: parentLinkChildRequestSchema },
+  { dartName: "LinkChildResponse", schema: linkChildResponseSchema },
+  { dartName: "RoleSwitchRequest", schema: roleSwitchRequestSchema },
+  { dartName: "TosAcceptRequest", schema: tosAcceptRequestSchema },
+  { dartName: "Session", schema: sessionSchema },
 ];

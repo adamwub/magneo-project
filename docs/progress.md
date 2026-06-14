@@ -17,11 +17,13 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** **SIAP MASUK FASE 1.** Fase 0 (Pondasi) SELESAI — potongan **0a–0j semua ✅**. Pondasi monorepo tuntas.
-- **Sedang menuju:** **Fase 1** — Akun & pintu masuk (auth, RBAC, provisioning, impor XLSX, invite code ortu). *Belum mulai; menunggu aba-aba pemilik.* Di sinilah keputusan "pseudonim NIS" (lihat Ide & Utang) harus diputuskan.
-- **Bukti terakhir yang berjalan:** CI (`.github/workflows/ci.yml`) — seluruh langkah lulus lokal: node job (lint ✅, typecheck ✅, test 8/8 ✅, build ✅) + flutter job (analyze "No issues" ✅, test 1/1 ✅). Catatan: centang hijau di GitHub butuh repo di-push (belum ada remote).
+- **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1 potongan **1a ✅** (skema bersama auth & sekolah). Lihat "RENCANA FASE 1" di bawah.
+- **Sedang menuju:** **Potongan 1b** — Auth inti (JWT access+refresh rotating, `Session`, login siswa NIS / dewasa HP-email, lockout 5×, password policy, first-login ganti pw + setuju ToS). *Menunggu aba-aba pemilik sebelum mulai.*
+- **Keputusan NIS sudah DIAMBIL (2026-06-14):** NIS siswa **DISAMARKAN** di cloud (hash berkunci per sekolah jadi `User.username`), NIS mentah TIDAK pernah disimpan di cloud. Detail di "Keputusan Penting" di bawah.
+- **Bukti terakhir yang berjalan:** `packages/shared` — typecheck ✅, test **24/24 ✅** (auth 10, school 11, errors 3), generate Dart ✅ (16 model + 8 enum).
+- **GitHub:** **belum bisa push** — firewall environment ini memblokir TLS ke `github.com`/`api.github.com` (TCP nyambung, TLS di-drop). Internet umum jalan (cli.github.com & Cloudflare OK). Token & `gh` 2.94 sudah siap. Tindakan: buka firewall (allowlist github.com, api.github.com, codeload.github.com, *.githubusercontent.com:443) ATAU push dari laptop. Backup off-site jadi PR penting — sementara hanya ada satu salinan di server ini.
 - **Catatan infra:** PostgreSQL dev kini lewat **compose resmi** (`infra/docker-compose.dev.yml`), volume bernama `magnoo-postgres-data` → **data persisten**. Nyalakan semua: `pnpm dev:infra` (atau `docker compose -f infra/docker-compose.dev.yml up --build`); matikan: `pnpm dev:infra:down`. API otomatis `prisma migrate deploy` saat start. Kontainer Postgres lama yang berdiri sendiri sudah dihapus (digantikan compose).
-- **Commit terakhir:** `1b49cfd` (potongan 0j — CI). Lihat `git log --oneline` untuk riwayat lengkap.
+- **Commit terakhir:** lihat `git log --oneline` (1a = `feat(shared): Fase 1 auth & school schemas`).
 - **Tanggal sesi terakhir:** 2026-06-14.
 - **Peta lengkap potongan Fase 0:** lihat bagian "🧱 RENCANA FASE 0" di bawah (centang = selesai).
 - **Catatan lingkungan:** perkakas (Git/Node20/pnpm9/Docker) terpasang. **Flutter 3.44.2 terpasang di `/opt/flutter`** — sesi baru WAJIB tambahkan ke PATH: `export PATH="/opt/flutter/bin:$PATH"` (dan `git config --global --add safe.directory /opt/flutter`). Dokumen "manusia" (21 file) tertata di folder `00–05` DI LUAR repo ini; folder coding dijaga bersih.
@@ -61,6 +63,26 @@
 
 -----
 
+## 🧱 RENCANA FASE 1 — 11 POTONGAN (disetujui pemilik 2026-06-14)
+
+> Backend dulu, baru tampilan, baru uji E2E. Tiap potong: kerjakan → buktikan jalan → catat → commit → berhenti & lapor. Sumber: aplikasi.md BAGIAN 7, 8.2 (auth & school), 12 (Fase 1), 15 (QA-1, QA-2).
+
+- [x] **1a** `packages/shared` — skema zod + error codes + enum untuk auth & school (kontrak data, belum ada logika)
+- [ ] **1b** Auth inti — JWT access+refresh rotating, `Session`, login (siswa NIS / dewasa HP-email), lockout 5×→15 mnt, password policy, first-login (ganti pw + setuju ToS)
+- [ ] **1c** RBAC — guard `@Roles` + `@Scope`, enforce scope (guru→kelasnya, admin→sekolahnya), 403 + AuditLog
+- [ ] **1d** Sesi & peran — batas perangkat (siswa 2 / lain 3), refresh reuse-detection→revoke semua, role-switch (linkRoles), list/revoke sesi
+- [ ] **1e** Provisioning — HQ buat sekolah, pairing token Box, akun admin (sekali tampil), setting sekolah, CRUD kelas, wizard kenaikan kelas (preview→confirm)
+- [ ] **1f** Impor XLSX — job BullMQ + validasi per-baris + laporan error ramah + idempotent + **penyamaran NIS** (hash berkunci per sekolah)
+- [ ] **1g** Undangan ortu — kode undangan + PDF batch (render server), register ortu + OTP (WA = adapter stub/log), verify-otp, link anak
+- [ ] **1h** Consent & audit — arsip ConsentRecord + audit-log (append-only ditegakkan di service)
+- [ ] **1i** Web — `/hq` wizard provision + `/school` Pengguna & Kelas
+- [ ] **1j** Mobile — login + first-login semua peran + OTP ortu & link anak
+- [ ] **1k** Uji E2E + QA — HQ buat sekolah → impor 500 siswa (ada baris rusak) → siswa login → ortu register & link. Gate QA-1 & QA-2
+
+**DoD Fase 1 (aplikasi.md BAGIAN 12):** skenario E2E di atas jalan; QA-1 (auth: lockout, first-login, IDOR antar scope = 403+audit) & QA-2 (impor: campur valid/invalid, idempotent, 5.000 baris ditolak ramah) lulus.
+
+-----
+
 ## 💡 IDE & UTANG (jangan dikerjakan sekarang — catat dulu, kerjakan di fasenya)
 
 > Tempat menampung ide bagus yang muncul di tengah jalan, supaya tidak mengganggu fase yang sedang berjalan. Juga utang teknis yang sengaja ditunda.
@@ -72,7 +94,7 @@
 - **Utang (0d):** UUID dibuat di aplikasi; bila ingin persis spec (`gen_random_uuid()` sisi DB), ganti `@default(uuid())` → `@default(dbgenerated("gen_random_uuid()")) @db.Uuid` (butuh migrasi).
 - **Utang (0d):** nilai enum `RewardType/RedemptionStatus/PartnerStatus/JobStatus` dipilih sendiri — konfirmasi/sesuaikan saat fitur terkait dibangun (Fase 5 & 7).
 - **Utang (0g):** model Dart masih DISALIN manual dari `packages/shared/generated` ke `apps/mobile/lib/generated`. Jadikan langkah build otomatis (skrip generate menulis langsung ke mobile, atau melos hook) saat mulai garap layar HP sungguhan (Fase 1).
-- **KEPUTUSAN tertunda → Fase 1 (0i):** Bagaimana NIS siswa disimpan di cloud. Hasil analisis spec: ADR-005 melarang NIS *mentah* di cloud, TAPI Guardrail #13.2 mengizinkan NIS di cloud *asal di-pseudonim*, dan login 7.2 butuh siswa login pakai NIS. **Rekomendasi (belum diimplementasi):** kolom `User.username` siswa = NIS yang sudah disamarkan (mis. hash ber-kunci per sekolah), NIS asli hanya di Box (`student_pii.nis`). Saat login: siswa ketik NIS asli → cloud samarkan dgn cara sama → cocokkan. **Seed 0i sengaja TIDAK mengunci skema ini** — pakai kode palsu `siswa-demo-N`. Putuskan & implementasi saat membangun auth + impor XLSX di Fase 1.
+- ✅ **KEPUTUSAN NIS sudah diambil (2026-06-14)** — dipindah ke bagian "Keputusan Penting" di bawah. (Dulu tertunda dari 0i; pemilik memilih opsi "disamarkan".)
 
 -----
 
@@ -84,6 +106,7 @@
 - [contoh] Nama tabel pakai bahasa Inggris, teks UI pakai bahasa Indonesia.
 - **2026-06-14** Versi mesin dikunci: **Node 20** + **pnpm 9** (pnpm terbaru menuntut Node 22). Dicatat di `package.json` (`engines`, `packageManager`) dan `.nvmrc`.
 - **2026-06-14** Akar repository = folder `magnoo-project` ini; branch utama `main`.
+- **2026-06-14 — PENYIMPANAN NIS SISWA = DISAMARKAN.** (Pemilik memutuskan di awal Fase 1.) NIS mentah **TIDAK pernah** disimpan di cloud. `User.username` siswa = NIS yang sudah disamarkan dengan **hash berkunci per sekolah** (kunci unik tiap sekolah). Saat login: siswa ketik NIS asli → cloud menyamarkan dengan cara & kunci yang sama → cocokkan dengan `username` tersimpan. NIS asli nanti hanya tinggal di perangkat Box sekolah (Fase 3). Sesuai ADR-005 + Guardrail 13.2. **Implementasi:** penyamaran di 1f (impor) & 1b (login). *Utang terkait: tampilan "NIS + badge Box offline" di dashboard (11.3) perlu dipikirkan di Fase 3 karena cloud tak punya NIS asli.*
 
 -----
 
@@ -101,6 +124,32 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-14 — Fase 1a: Skema bersama auth & sekolah
+
+**Yang dikerjakan:** Membuat "kamus data" (kontrak bentuk data) untuk seluruh fitur Fase 1 di `packages/shared`. Ini fondasi tipe yang dipakai bareng oleh server, web, dan HP — belum ada logika yang jalan, baru cetakan datanya. Mencakup: login & token, lupa/reset password, registrasi ortu + OTP, kode undangan & link anak, role-switch, persetujuan ToS, daftar sesi; lalu sisi sekolah: buat sekolah (HQ), pairing Box, akun admin, setting sekolah, kelas (CRUD + kenaikan kelas), impor XLSX (request + laporan progres/error), kode undangan + batch, consent, dan audit log. Semua dijaga **tanpa PII siswa** (ADR-005).
+
+**File yang dibuat/diubah:**
+- `packages/shared/src/enums.ts` — tambah enum: SchoolStatus, LinkStatus, ConsentType, ImportJobStatus, InviteCodeStatus; daftarkan LinkStatus & ConsentType ke generator Dart.
+- `packages/shared/src/errors.ts` — tambah kode error Fase 1 (ToS, OTP, kode undangan, role-switch, impor).
+- `packages/shared/src/auth.ts` — tambah ~13 skema auth (lupa/reset pw, parent register/verify/link, role-switch, ToS, sesi) + validator OTP 6 digit & kode undangan 8 char.
+- `packages/shared/src/school.ts` — **(baru)** seluruh skema provisioning & master data sekolah.
+- `packages/shared/src/index.ts` — ekspor `school.ts`.
+- `packages/shared/src/generate/registry.ts` — daftarkan 10 model Dart baru (alur HP).
+- `packages/shared/src/auth.test.ts` + `school.test.ts` — tes validasi skema.
+- `packages/shared/generated/dart/magnoo_models.dart` — hasil regenerate (16 model + 8 enum).
+
+**Keputusan kecil:** OTP = 6 digit angka; kode undangan = 8 karakter huruf besar/angka; respons link-anak hanya kirim `studentUserId` + status (tanpa nama siswa). Status job impor & status kode undangan dibuat sebagai tipe bersama (bukan enum DB) karena dilacak di BullMQ/turunan kolom.
+
+**Sudah dibuktikan jalan?** Ya: `pnpm --filter @magnoo/shared typecheck` ✅; `test` ✅ **24/24** (auth 10, school 11, errors 3); `generate:dart` ✅ (16 model + 8 enum).
+
+**Sudah di-commit?** Ya — `feat(shared): Fase 1 auth & school schemas (1a)`.
+
+**Status:** SELESAI.
+
+**Langkah berikutnya:** Potongan **1b** — Auth inti (JWT access+refresh rotating, `Session`, login siswa NIS / dewasa, lockout, password policy, first-login). Tunggu aba-aba pemilik sebelum mulai.
 
 -----
 

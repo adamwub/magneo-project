@@ -26,6 +26,38 @@ export type Role = (typeof ROLES)[number];
 export const USER_STATUSES = ["ACTIVE", "INACTIVE", "LOCKED", "PENDING_CONSENT"] as const;
 export type UserStatus = (typeof USER_STATUSES)[number];
 
+/** School.status — BAGIAN 6.1 */
+export const SCHOOL_STATUSES = ["ONBOARDING", "ACTIVE", "PAUSED", "TERMINATED"] as const;
+export type SchoolStatus = (typeof SCHOOL_STATUSES)[number];
+
+/** ParentLink.status — BAGIAN 6.1 */
+export const LINK_STATUSES = ["ACTIVE", "REVOKED"] as const;
+export type LinkStatus = (typeof LINK_STATUSES)[number];
+
+/** ConsentRecord.type — BAGIAN 6.1 */
+export const CONSENT_TYPES = [
+  "GENERAL_DATA",
+  "FACE",
+  "PUBLICATION",
+  "ALUMNI_CAREER",
+  "TOS",
+] as const;
+export type ConsentType = (typeof CONSENT_TYPES)[number];
+
+/**
+ * Status job impor XLSX (BAGIAN 8.2 /school/users/import).
+ * Bukan enum DB — status dilacak di antrean BullMQ/Redis, dipakai di respons API.
+ */
+export const IMPORT_JOB_STATUSES = ["QUEUED", "RUNNING", "COMPLETED", "FAILED"] as const;
+export type ImportJobStatus = (typeof IMPORT_JOB_STATUSES)[number];
+
+/**
+ * Status turunan kode undangan ortu (BAGIAN 8.2 /school/invite-codes).
+ * Dihitung dari kolom usedAt/revokedAt/expiresAt InviteCode saat membentuk respons.
+ */
+export const INVITE_CODE_STATUSES = ["ACTIVE", "USED", "REVOKED", "EXPIRED"] as const;
+export type InviteCodeStatus = (typeof INVITE_CODE_STATUSES)[number];
+
 /** AttendanceEvent.type — BAGIAN 6.2 */
 export const ATT_TYPES = ["IN", "OUT", "CORRECTION"] as const;
 export type AttType = (typeof ATT_TYPES)[number];
@@ -59,4 +91,7 @@ export const ENUM_REGISTRY = [
   { name: "AttMethod", values: ATT_METHODS },
   { name: "AttStatus", values: ATT_STATUSES },
   { name: "FinalAtt", values: FINAL_ATT_STATUSES },
+  // Fase 1 — dipakai di alur HP (ortu link anak & persetujuan ToS).
+  { name: "LinkStatus", values: LINK_STATUSES },
+  { name: "ConsentType", values: CONSENT_TYPES },
 ] as const;

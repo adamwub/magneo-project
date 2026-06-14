@@ -6,4 +6,5 @@ export * from "./enums.js";
 export * from "./errors.js";
 export * from "./constants.js";
 export * from "./auth.js";
+export * from "./school.js";
 export * from "./attendance.js";
