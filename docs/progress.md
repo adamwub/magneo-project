@@ -17,10 +17,10 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** Fase 0 (Pondasi) → potongan **0a SELESAI**. ✅
-- **Sedang menuju:** potongan **0b** — `packages/shared` (skema zod inti: auth, error codes, attendance) + skrip generate model Dart. *Belum mulai; menunggu aba-aba pemilik.*
-- **Bukti terakhir yang berjalan:** `pnpm install` hijau, Docker `hello-world` jalan, repo bersih.
-- **Commit terakhir:** `6ac9eee` (jalankan `git log --oneline` di folder ini untuk riwayat lengkap).
+- **Posisi sekarang:** Fase 0 (Pondasi) → potongan **0a & 0b SELESAI**. ✅
+- **Sedang menuju:** potongan **0c** — `apps/api` (NestJS): rangka + pembaca `.env` + endpoint `/health` + stub 12 modul. *Belum mulai; menunggu aba-aba pemilik.*
+- **Bukti terakhir yang berjalan:** `@magnoo/shared` — typecheck hijau, 7/7 tes lulus, build (tsup) sukses, generator Dart menghasilkan `generated/dart/magnoo_models.dart` (6 enum + 6 model).
+- **Commit terakhir:** lihat `git log --oneline` di folder ini (potongan 0b ter-commit).
 - **Tanggal sesi terakhir:** 2026-06-14.
 - **Peta lengkap potongan Fase 0:** lihat bagian "🧱 RENCANA FASE 0" di bawah (centang = selesai).
 - **Catatan lingkungan:** perkakas (Git/Node20/pnpm9/Docker) sudah terpasang di server. Flutter dipasang nanti (potong 0g). Dokumen "manusia" (21 file) tertata di folder `00–05` DI LUAR repo ini; folder coding sengaja dijaga bersih (kode + 3 file inti saja).
@@ -46,7 +46,7 @@
 > Dikerjakan berurutan. Tiap potong: kerjakan → buktikan jalan → catat di sini → commit. Berhenti & lapor sebelum potong berikutnya.
 
 - [x] **0a** Pasang perkakas + `git init` + kerangka monorepo (BAGIAN 5)
-- [ ] **0b** `packages/shared` — skema zod inti (auth, error codes, attendance) + skrip generate model Dart
+- [x] **0b** `packages/shared` — skema zod inti (auth, error codes, attendance) + skrip generate model Dart
 - [ ] **0c** `apps/api` (NestJS) — rangka + pembaca `.env` + endpoint `/health` + stub 12 modul
 - [ ] **0d** Prisma + seluruh skema database BAGIAN 6 + migrasi pertama
 - [ ] **0e** `apps/web` (Next.js) — rangka + halaman cek status API
@@ -94,6 +94,34 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-14 — Fase 0b: packages/shared (kamus bersama)
+
+**Yang dikerjakan:** Membuat "kamus bersama" `@magnoo/shared` — satu tempat untuk aturan bentuk data yang dipakai backend, web, dan HP supaya tidak beda-beda. Isinya: daftar enum inti (peran pengguna, status absen), daftar kode error terpusat, dan skema pemeriksaan data untuk login & absensi. Plus satu "mesin penerjemah" yang mengubah skema itu jadi berkas model untuk aplikasi HP (Dart) secara otomatis.
+
+**File yang dibuat:**
+- `packages/shared/` — `package.json`, `tsconfig.json`, `tsup.config.ts`, `vitest.config.ts`.
+- `src/enums.ts` (enum inti), `src/errors.ts` (kode error + bentuk respons), `src/constants.ts` (default setelan sekolah BAGIAN 10.1, pagination), `src/auth.ts` & `src/attendance.ts` (skema zod), `src/index.ts` (pintu ekspor).
+- `src/generate/registry.ts` + `src/generate/dart.ts` (mesin penerjemah ke Dart: zod → JSON Schema → `.dart`).
+- `src/auth.test.ts` + `src/errors.test.ts` (tes).
+- Output: `generated/dart/magnoo_models.dart` (6 enum + 6 model).
+
+**Keputusan kecil yang diambil:**
+- Koordinat GPS pada check-in dibuat datar (`geoLat`/`geoLng`) agar penerjemah Dart sederhana & andal di tahap pondasi.
+- Field bertipe enum dicocokkan otomatis ke enum Dart berdasarkan kumpulan nilainya; kata kunci Dart (mis. `in`) diberi akhiran `_`.
+- Aturan bisnis BAGIAN 10 BELUM dibuat di sini (itu Fase 2) — di 0b hanya bentuk datanya.
+
+**Sudah dibuktikan jalan?** Ya: `pnpm typecheck` hijau (strict, tanpa `any`), `pnpm test` 7/7 lulus, `pnpm build` sukses (ESM+CJS+types), `pnpm generate:dart` menghasilkan berkas Dart yang benar (field `accessToken` terjaga, enum `Role` terpetakan). Perintah level-root `pnpm typecheck`/`pnpm test` juga hijau (yang dipakai CI nanti).
+
+**Catatan jujur:** berkas `.dart` belum diverifikasi oleh compiler Dart karena Flutter/Dart baru dipasang di potongan 0g. Di situ nanti dipastikan benar-benar meng-compile.
+
+**Sudah di-commit?** Ya — `feat(shared): core enums, error codes, zod schemas, and Dart model generator (Fase 0b)`.
+
+**Status:** Selesai (potongan 0b dari 10).
+
+**Langkah berikutnya:** Potongan **0c** — rangka backend `apps/api` (NestJS) + `/health` + stub modul. Menunggu aba-aba pemilik.
 
 -----
 
