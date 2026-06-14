@@ -17,11 +17,11 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** Fase 0 (Pondasi) → potongan **0a–0d SELESAI**. ✅
-- **Sedang menuju:** potongan **0e** — `apps/web` (Next.js): rangka + halaman cek status API. *Belum mulai; menunggu aba-aba pemilik.*
-- **Bukti terakhir yang berjalan:** database — migrasi `init` membuat **38 tabel + 32 enum**; Prisma Client menyambung (`school.count()=0`); server NestJS boot dengan PrismaModule + `/health` HTTP 200. typecheck/build hijau.
+- **Posisi sekarang:** Fase 0 (Pondasi) → potongan **0a–0e SELESAI**. ✅
+- **Sedang menuju:** potongan **0f** — `apps/portal` (Preact, captive portal super ringan <200KB) + cek status API. *Belum mulai; menunggu aba-aba pemilik.*
+- **Bukti terakhir yang berjalan:** `apps/web` (Next.js) — `next build` hijau, halaman `/` (server-side) memanggil API & menampilkan "API terhubung" + `magnoo-api`, HTTP 200. API+web berjalan bersama.
 - **Catatan infra:** PostgreSQL dev berjalan via kontainer Docker `magnoo-postgres` (port 5432, user/pass/db = magnoo). Ini sementara; compose resmi dibuat di 0h. Data kontainer belum persisten — kalau kontainer dihapus, jalankan ulang migrasi.
-- **Commit terakhir:** lihat `git log --oneline` di folder ini (potongan 0d ter-commit).
+- **Commit terakhir:** lihat `git log --oneline` di folder ini (potongan 0e ter-commit).
 - **Tanggal sesi terakhir:** 2026-06-14.
 - **Peta lengkap potongan Fase 0:** lihat bagian "🧱 RENCANA FASE 0" di bawah (centang = selesai).
 - **Catatan lingkungan:** perkakas (Git/Node20/pnpm9/Docker) sudah terpasang di server. Flutter dipasang nanti (potong 0g). Dokumen "manusia" (21 file) tertata di folder `00–05` DI LUAR repo ini; folder coding sengaja dijaga bersih (kode + 3 file inti saja).
@@ -50,7 +50,7 @@
 - [x] **0b** `packages/shared` — skema zod inti (auth, error codes, attendance) + skrip generate model Dart
 - [x] **0c** `apps/api` (NestJS) — rangka + pembaca `.env` + endpoint `/health` + stub 13 modul
 - [x] **0d** Prisma + seluruh skema database BAGIAN 6 (cloud 6.1–6.3) + migrasi pertama
-- [ ] **0e** `apps/web` (Next.js) — rangka + halaman cek status API
+- [x] **0e** `apps/web` (Next.js) — rangka + halaman cek status API
 - [ ] **0f** `apps/portal` (Preact) — rangka super ringan + cek status (<200KB)
 - [ ] **0g** `apps/mobile` (Flutter) — rangka + layar cek status API (Flutter dipasang saat potong ini)
 - [ ] **0h** `infra/docker-compose.dev.yml` (postgres, redis, api, web)
@@ -99,6 +99,31 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-14 — Fase 0e: rangka web apps/web (Next.js)
+
+**Yang dikerjakan:** Membuat rangka dashboard web. Ada satu halaman pembuka yang, saat dibuka, otomatis "menyapa" backend dan menampilkan apakah API terhubung — pakai warna identitas Magnoo. Tujuannya membuktikan web dan backend bisa saling bicara.
+
+**File yang dibuat (semua di `apps/web`):**
+- `package.json`, `next.config.mjs` (transpile `@magnoo/shared`), `tsconfig.json`.
+- `app/layout.tsx`, `app/page.tsx` (halaman status, dirender di server agar bisa dibuktikan via curl), `app/globals.css` (warna identitas: ink/magnet-red/field-blue/gold/paper).
+- `.gitignore`: tambah `next-env.d.ts`.
+
+**Keputusan kecil yang diambil:**
+- Halaman status dibuat **server-side** (`dynamic = force-dynamic`) supaya statusnya nyata saat diminta dan bisa diverifikasi tanpa browser.
+- **Tailwind + shadcn/ui DITUNDA** ke Fase 1 (saat layar dashboard asli dibangun). Di 0e cukup CSS ringan — hindari menambah perkakas yang belum dipakai ("jangan optimasi prematur", BAGIAN 17).
+- Web menyambung ke `@magnoo/shared` (memakai `API_PREFIX`) — bukti monorepo terhubung.
+- Port web = 3001 (API = 3000), alamat API via env `API_URL` (default `http://localhost:3000`).
+
+**Sudah dibuktikan jalan?** Ya — `next build` hijau (4 halaman). Web + API dijalankan bersama; `curl http://localhost:3001` mengembalikan HTML berisi "API terhubung" dan `magnoo-api`, HTTP 200. Artinya halaman benar-benar memanggil `/health` backend dan memantulkan hasilnya.
+
+**Sudah di-commit?** Ya — `feat(web): Next.js skeleton with server-side API health status page (Fase 0e)`.
+
+**Status:** Selesai (potongan 0e dari 10).
+
+**Langkah berikutnya:** Potongan **0f** — rangka `apps/portal` (captive portal Preact, target <200KB) + cek status. Menunggu aba-aba pemilik.
 
 -----
 

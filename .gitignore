@@ -8,6 +8,7 @@ build/
 .next/
 out/
 *.tsbuildinfo
+next-env.d.ts
 
 # Environment & secrets (NEVER commit — see aplikasi.md guardrail #11)
 .env
