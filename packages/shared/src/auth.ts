@@ -52,6 +52,11 @@ export const loginResponseSchema = z.object({
   role: z.enum(ROLES),
   mustChangePassword: z.boolean(),
   mustAcceptTos: z.boolean(),
+  /**
+   * true bila login ini melampaui batas perangkat sehingga sesi TERTUA dicabut
+   * (BAGIAN 7.2: "beri tahu user"). Klien menampilkan info ke perangkat baru.
+   */
+  sessionEvicted: z.boolean(),
 });
 export type LoginResponse = z.infer<typeof loginResponseSchema>;
 

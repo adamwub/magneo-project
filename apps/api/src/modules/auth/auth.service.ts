@@ -1,5 +1,4 @@
-import { Injectable } from "@nestjs/common";
-import { HttpStatus } from "@nestjs/common";
+import { Injectable, HttpStatus } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import type { User } from "@prisma/client";
@@ -10,7 +9,9 @@ import type {
   TokenPair,
   PasswordChangeRequest,
   TosAcceptRequest,
+  SessionListResponse,
   JwtClaims,
+  Role,
 } from "@magnoo/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { Env } from "../../config/env";
@@ -23,6 +24,9 @@ const LOCK_THRESHOLD = 5;
 const LOCK_MINUTES = 15;
 /** 423 Locked — tidak tersedia di enum HttpStatus Nest versi ini. */
 const HTTP_LOCKED = 423;
+/** Batas sesi aktif per perangkat (BAGIAN 7.2): siswa 2, peran lain 3. */
+const DEVICE_LIMIT_STUDENT = 2;
+const DEVICE_LIMIT_OTHER = 3;
 
 @Injectable()
 export class AuthService {
@@ -64,25 +68,48 @@ export class AuthService {
       });
     }
 
-    const { accessToken, refreshToken } = await this.issueSession(user, dto.deviceId, dto.deviceName);
+    const { accessToken, refreshToken, evicted } = await this.issueSession(
+      user,
+      dto.deviceId,
+      dto.deviceName,
+    );
     return {
       accessToken,
       refreshToken,
       role: user.role,
       mustChangePassword: user.mustChangePassword,
       mustAcceptTos: await this.needsTos(user.id),
+      sessionEvicted: evicted,
     };
   }
 
-  /** POST /auth/refresh (BAGIAN 7.1) — rotating: terbitkan token baru, ganti hash sesi. */
+  /** POST /auth/refresh (BAGIAN 7.1) — rotating + reuse-detection. */
   async refresh(dto: RefreshRequest): Promise<TokenPair> {
     const tokenHash = hashRefreshToken(dto.refreshToken);
     const session = await this.prisma.session.findFirst({
       where: { refreshTokenHash: tokenHash, revokedAt: null },
     });
+
     if (!session) {
+      // Mungkin token lama yang sudah diputar lalu dipakai ulang → reuse-detection.
+      const reused = await this.prisma.session.findFirst({
+        where: { prevRefreshTokenHash: tokenHash },
+      });
+      if (reused) {
+        // Indikasi pencurian: cabut SELURUH sesi user (BAGIAN 7.1).
+        await this.prisma.session.updateMany({
+          where: { userId: reused.userId, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+        throw apiError(
+          "TOKEN_REUSE_DETECTED",
+          "Aktivitas mencurigakan terdeteksi. Semua sesi diakhiri, silakan login lagi.",
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
       throw apiError("UNAUTHORIZED", "Sesi tidak valid.", HttpStatus.UNAUTHORIZED);
     }
+
     const now = new Date();
     if (session.expiresAt <= now) {
       throw apiError("TOKEN_EXPIRED", "Sesi kedaluwarsa, silakan login lagi.", HttpStatus.UNAUTHORIZED);
@@ -98,10 +125,11 @@ export class AuthService {
       where: { id: session.id },
       data: {
         refreshTokenHash: hashRefreshToken(newRefresh),
+        prevRefreshTokenHash: session.refreshTokenHash,
         expiresAt: this.refreshExpiry(),
       },
     });
-    const accessToken = await this.signAccessToken(user, session.id);
+    const accessToken = await this.signAccessToken(user, session.id, await this.getLinkRoles(user.id));
     return { accessToken, refreshToken: newRefresh };
   }
 
@@ -111,6 +139,61 @@ export class AuthService {
       where: { id: sessionId, revokedAt: null },
       data: { revokedAt: new Date() },
     });
+  }
+
+  /** POST /auth/role-switch (BAGIAN 7.1) — pindah ke akun peran lain milik orang yang sama. */
+  async roleSwitch(current: JwtClaims, targetUserId: string): Promise<TokenPair> {
+    const link = await this.prisma.userRoleLink.findFirst({
+      where: {
+        verifiedBy: { not: null },
+        OR: [
+          { primaryUserId: current.sub, linkedUserId: targetUserId },
+          { primaryUserId: targetUserId, linkedUserId: current.sub },
+        ],
+      },
+    });
+    if (!link) {
+      throw apiError("ROLE_SWITCH_NOT_ALLOWED", "Tidak ada akun peran tertaut yang cocok.", HttpStatus.FORBIDDEN);
+    }
+    const target = await this.prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!target || target.status === "INACTIVE" || target.deletedAt) {
+      throw apiError("ROLE_SWITCH_NOT_ALLOWED", "Akun tujuan tidak tersedia.", HttpStatus.FORBIDDEN);
+    }
+    // Sesi baru pada perangkat yang sama dengan sesi saat ini.
+    const currentSession = await this.prisma.session.findUnique({ where: { id: current.sid } });
+    const { accessToken, refreshToken } = await this.issueSession(
+      target,
+      currentSession?.deviceId ?? "role-switch",
+      currentSession?.deviceName ?? undefined,
+    );
+    return { accessToken, refreshToken };
+  }
+
+  /** GET /auth/sessions — daftar sesi aktif user (BAGIAN 8.2). */
+  async listSessions(userId: string, currentSid: string): Promise<SessionListResponse> {
+    const sessions = await this.prisma.session.findMany({
+      where: { userId, revokedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: "desc" },
+    });
+    return {
+      sessions: sessions.map((s) => ({
+        id: s.id,
+        deviceName: s.deviceName,
+        createdAt: s.createdAt.toISOString(),
+        current: s.id === currentSid,
+      })),
+    };
+  }
+
+  /** DELETE /auth/sessions/:id — cabut sesi milik user sendiri (BAGIAN 8.2). */
+  async revokeSession(userId: string, sessionId: string): Promise<void> {
+    const res = await this.prisma.session.updateMany({
+      where: { id: sessionId, userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    if (res.count === 0) {
+      throw apiError("NOT_FOUND", "Sesi tidak ditemukan.", HttpStatus.NOT_FOUND);
+    }
   }
 
   /** POST /auth/password/change (BAGIAN 7.2). */
@@ -196,11 +279,29 @@ export class AuthService {
     return new Date(Date.now() + ttl * 1000);
   }
 
+  /** Peran dari akun lain milik orang yang sama (UserRoleLink terverifikasi) — untuk role switcher. */
+  private async getLinkRoles(userId: string): Promise<Role[]> {
+    const links = await this.prisma.userRoleLink.findMany({
+      where: { verifiedBy: { not: null }, OR: [{ primaryUserId: userId }, { linkedUserId: userId }] },
+    });
+    const otherIds = links.map((l) => (l.primaryUserId === userId ? l.linkedUserId : l.primaryUserId));
+    if (otherIds.length === 0) return [];
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: otherIds }, deletedAt: null },
+      select: { role: true },
+    });
+    return users.map((u) => u.role);
+  }
+
+  /**
+   * Buat sesi + token, lalu tegakkan batas perangkat (cabut sesi tertua bila lewat).
+   * @returns token + `evicted` (true bila ada sesi lama yang dicabut).
+   */
   private async issueSession(
     user: User,
     deviceId: string,
     deviceName?: string,
-  ): Promise<TokenPair> {
+  ): Promise<TokenPair & { evicted: boolean }> {
     const refreshToken = generateRefreshToken();
     const session = await this.prisma.session.create({
       data: {
@@ -211,18 +312,36 @@ export class AuthService {
         expiresAt: this.refreshExpiry(),
       },
     });
-    const accessToken = await this.signAccessToken(user, session.id);
-    return { accessToken, refreshToken };
+    const evicted = await this.enforceDeviceLimit(user.id, user.role);
+    const accessToken = await this.signAccessToken(user, session.id, await this.getLinkRoles(user.id));
+    return { accessToken, refreshToken, evicted };
   }
 
-  private async signAccessToken(user: User, sessionId: string): Promise<string> {
+  /** Cabut sesi TERTUA yang melebihi batas perangkat (BAGIAN 7.2). @returns true bila ada yang dicabut. */
+  private async enforceDeviceLimit(userId: string, role: Role): Promise<boolean> {
+    const limit = role === "STUDENT" ? DEVICE_LIMIT_STUDENT : DEVICE_LIMIT_OTHER;
+    const active = await this.prisma.session.findMany({
+      where: { userId, revokedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    });
+    if (active.length <= limit) return false;
+    const toRevoke = active.slice(0, active.length - limit).map((s) => s.id);
+    await this.prisma.session.updateMany({
+      where: { id: { in: toRevoke } },
+      data: { revokedAt: new Date() },
+    });
+    return true;
+  }
+
+  private async signAccessToken(user: User, sessionId: string, linkRoles: Role[]): Promise<string> {
     const claims: JwtClaims = {
       sub: user.id,
       sid: sessionId,
       role: user.role,
       schoolId: user.schoolId,
-      scopes: [], // diisi sesuai kebijakan RBAC pada 1c.
-      linkRoles: [], // diisi role switcher pada 1d.
+      scopes: [], // diisi sesuai kebijakan RBAC pada endpoint (1c).
+      linkRoles,
     };
     return this.jwt.signAsync(claims, {
       secret: this.config.get("JWT_ACCESS_SECRET", { infer: true }),

@@ -311,6 +311,9 @@ model Session {
   deviceId         String // fingerprint perangkat
   deviceName       String?
   refreshTokenHash String
+  // Hash refresh token TEPAT sebelum rotasi terakhir — untuk reuse-detection (BAGIAN 7.1):
+  // token lama yang sudah diputar lalu dipakai ulang ⇒ indikasi pencurian ⇒ revoke semua sesi user.
+  prevRefreshTokenHash String?
   expiresAt        DateTime
   revokedAt        DateTime?
   createdAt        DateTime  @default(now())

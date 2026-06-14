@@ -1,15 +1,28 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  UseGuards,
+} from "@nestjs/common";
 import {
   loginRequestSchema,
   refreshRequestSchema,
   passwordChangeRequestSchema,
   tosAcceptRequestSchema,
+  roleSwitchRequestSchema,
   type LoginRequest,
   type LoginResponse,
   type RefreshRequest,
   type TokenPair,
   type PasswordChangeRequest,
   type TosAcceptRequest,
+  type RoleSwitchRequest,
+  type SessionListResponse,
   type JwtClaims,
 } from "@magnoo/shared";
 import { ZodValidationPipe } from "../../common/zod-validation.pipe";
@@ -66,5 +79,31 @@ export class AuthController {
     @Body(new ZodValidationPipe(tosAcceptRequestSchema)) dto: TosAcceptRequest,
   ): Promise<void> {
     await this.auth.acceptTos(user.sub, dto);
+  }
+
+  @Post("role-switch")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  roleSwitch(
+    @CurrentUser() user: JwtClaims,
+    @Body(new ZodValidationPipe(roleSwitchRequestSchema)) dto: RoleSwitchRequest,
+  ): Promise<TokenPair> {
+    return this.auth.roleSwitch(user, dto.targetUserId);
+  }
+
+  @Get("sessions")
+  @UseGuards(JwtAuthGuard)
+  listSessions(@CurrentUser() user: JwtClaims): Promise<SessionListResponse> {
+    return this.auth.listSessions(user.sub, user.sid);
+  }
+
+  @Delete("sessions/:id")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtAuthGuard)
+  async revokeSession(
+    @CurrentUser() user: JwtClaims,
+    @Param("id") id: string,
+  ): Promise<void> {
+    await this.auth.revokeSession(user.sub, id);
   }
 }

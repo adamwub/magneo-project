@@ -144,8 +144,9 @@ class LoginResponse {
   final Role role;
   final bool mustChangePassword;
   final bool mustAcceptTos;
+  final bool sessionEvicted;
 
-  const LoginResponse({required this.accessToken, required this.refreshToken, required this.role, required this.mustChangePassword, required this.mustAcceptTos});
+  const LoginResponse({required this.accessToken, required this.refreshToken, required this.role, required this.mustChangePassword, required this.mustAcceptTos, required this.sessionEvicted});
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) => LoginResponse(
       accessToken: json['accessToken'] as String,
@@ -153,6 +154,7 @@ class LoginResponse {
       role: Role.fromValue(json['role'] as String),
       mustChangePassword: json['mustChangePassword'] as bool,
       mustAcceptTos: json['mustAcceptTos'] as bool,
+      sessionEvicted: json['sessionEvicted'] as bool,
       );
 
   Map<String, dynamic> toJson() => {
@@ -161,6 +163,7 @@ class LoginResponse {
       'role': role.value,
       'mustChangePassword': mustChangePassword,
       'mustAcceptTos': mustAcceptTos,
+      'sessionEvicted': sessionEvicted,
       };
 }
 

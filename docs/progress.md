@@ -17,8 +17,9 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1: **1a ✅** (skema bersama), **1b ✅** (auth inti), **1c ✅** (RBAC + audit append-only). Lihat "RENCANA FASE 1" di bawah.
-- **Sedang menuju:** **Potongan 1d** — Sesi & peran: batas perangkat (siswa 2 / lain 3), refresh reuse-detection → revoke semua sesi, role-switch (linkRoles), list/revoke sesi. *Menunggu aba-aba pemilik sebelum mulai.*
+- **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1: **1a ✅** (skema bersama), **1b ✅** (auth inti), **1c ✅** (RBAC + audit), **1d ✅** (sesi & peran). Lihat "RENCANA FASE 1" di bawah.
+- **Sedang menuju:** **Potongan 1e** — Provisioning: HQ buat sekolah, pairing token Box, akun admin, setting sekolah, CRUD kelas, wizard kenaikan kelas. *Menunggu aba-aba pemilik sebelum mulai.* (Ini potongan pertama yang memakai guard RBAC 1c pada endpoint nyata.)
+- **Migrasi DB baru:** `20260614141855_session_prev_refresh_hash` (kolom `Session.prevRefreshTokenHash` untuk reuse-detection). Sudah diterapkan ke DB dev.
 - **Keputusan NIS sudah DIAMBIL (2026-06-14):** NIS siswa **DISAMARKAN** di cloud (hash berkunci per sekolah jadi `User.username`), NIS mentah TIDAK pernah disimpan di cloud. Detail di "Keputusan Penting" di bawah. *Penerapan transform NIS→samaran masih menyusul di 1f (impor) & disambung ke login; saat ini login siswa mencocokkan `username` apa adanya + butuh `schoolId`.*
 - **Bukti terakhir yang berjalan:** API auth diuji **terhadap database nyata** (port lokal 3100): login guru & siswa ✅ (token JWT terbit, klaim sub/sid/role/schoolId benar), password salah → error generik ✅, refresh berputar (token baru) ✅, endpoint terproteksi tanpa token → 401 ✅, setuju ToS → 204 & re-login `mustAcceptTos:false` ✅, login siswa tanpa schoolId ditolak ✅. Tes unit: shared 24/24, api 15/15 (lockout, rotasi, dll). typecheck 4/4 ✅, build API ✅.
 - **GitHub:** **belum bisa push** — firewall environment ini memblokir TLS ke `github.com`/`api.github.com` (TCP nyambung, TLS di-drop). Internet umum jalan (cli.github.com & Cloudflare OK). Token & `gh` 2.94 sudah siap. Tindakan: buka firewall (allowlist github.com, api.github.com, codeload.github.com, *.githubusercontent.com:443) ATAU push dari laptop. Backup off-site jadi PR penting — sementara hanya ada satu salinan di server ini.
@@ -70,7 +71,7 @@
 - [x] **1a** `packages/shared` — skema zod + error codes + enum untuk auth & school (kontrak data, belum ada logika)
 - [x] **1b** Auth inti — JWT access+refresh rotating, `Session`, login (siswa NIS+schoolId / dewasa HP-email), lockout 5×→15 mnt, password policy, first-login (ganti pw + setuju ToS)
 - [x] **1c** RBAC — guard `@Roles` + `@Scope`, enforce scope (guru→kelasnya, admin→sekolahnya, siswa→diri, ortu→anak, HQ→global), 403 + AuditLog append-only
-- [ ] **1d** Sesi & peran — batas perangkat (siswa 2 / lain 3), refresh reuse-detection→revoke semua, role-switch (linkRoles), list/revoke sesi
+- [x] **1d** Sesi & peran — batas perangkat (siswa 2 / lain 3), refresh reuse-detection→revoke semua, role-switch (linkRoles), list/revoke sesi
 - [ ] **1e** Provisioning — HQ buat sekolah, pairing token Box, akun admin (sekali tampil), setting sekolah, CRUD kelas, wizard kenaikan kelas (preview→confirm)
 - [ ] **1f** Impor XLSX — job BullMQ + validasi per-baris + laporan error ramah + idempotent + **penyamaran NIS** (hash berkunci per sekolah)
 - [ ] **1g** Undangan ortu — kode undangan + PDF batch (render server), register ortu + OTP (WA = adapter stub/log), verify-otp, link anak
@@ -124,6 +125,29 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-14 — Fase 1d: Sesi & peran (batas perangkat, reuse-detection, role-switch)
+
+**Yang dikerjakan:** Mematangkan pengelolaan sesi login. (1) **Batas perangkat:** satu siswa maks login di 2 perangkat aktif, peran lain 3; bila login di perangkat ke-3 (siswa), sesi **tertua** otomatis dicabut & perangkat baru diberi tahu (`sessionEvicted`). (2) **Deteksi pencurian token:** kalau token perpanjangan (refresh) yang lama — yang sudah diputar — dipakai ulang, sistem menganggap token bocor/digandakan lalu **mencabut SEMUA sesi** orang itu (harus login ulang). (3) **Ganti peran tanpa logout:** orang yang punya >1 akun peran (mis. guru yang juga ortu) dan tautannya sudah diverifikasi admin bisa pindah akun; daftar peran lain ikut di token (`linkRoles`). (4) **Kelola sesi:** lihat daftar sesi aktif & cabut salah satunya.
+
+**File yang dibuat/diubah:**
+- `apps/api/prisma/schema.prisma` + migrasi `20260614141855_session_prev_refresh_hash` — kolom `Session.prevRefreshTokenHash` (untuk reuse-detection).
+- `apps/api/src/modules/auth/auth.service.ts` — tambah: batas perangkat (`enforceDeviceLimit`), reuse-detection di `refresh`, `roleSwitch`, `listSessions`, `revokeSession`, `getLinkRoles` (isi `linkRoles` di token).
+- `apps/api/src/modules/auth/auth.controller.ts` — endpoint `POST /auth/role-switch`, `GET /auth/sessions`, `DELETE /auth/sessions/:id`.
+- `packages/shared/src/auth.ts` — `loginResponse` tambah `sessionEvicted`. Regenerate Dart.
+- `auth.service.test.ts` — tes batas perangkat, reuse-detection, role-switch, list/revoke sesi.
+
+**Keputusan kecil:** (1) Reuse-detection memakai *satu* hash sebelumnya (`prevRefreshTokenHash`) — cukup menangkap skenario nyata (token lama dipakai setelah klien sah memutarnya); riwayat penuh tidak disimpan agar sederhana. (2) Role-switch menerbitkan sesi baru pada **perangkat yang sama** (ambil deviceId dari sesi saat ini). (3) Tautan peran wajib `verifiedBy` terisi (diverifikasi admin) baru bisa dipakai.
+
+**Sudah dibuktikan jalan?** Ya, dua lapis. **Tes unit:** api 36/36 (shared 24) — termasuk batas perangkat, reuse→revoke-all, role-switch izin/tolak, list/revoke. **Uji langsung ke DB:** (a) siswa login dev-A/B/C → sesi ke-3 men-set `sessionEvicted=true` & sisa sesi aktif tepat **2**; (b) login→refresh R1→R2, lalu **pakai ulang R1** → `TOKEN_REUSE_DETECTED` + semua sesi dicabut (R2 pun ikut mati). typecheck 4/4, build, lint ✅.
+
+**Sudah di-commit?** Ya — `feat(auth): device limits, refresh reuse-detection, role-switch, session mgmt (1d)`.
+
+**Status:** SELESAI.
+
+**Langkah berikutnya:** Potongan **1e** — Provisioning sekolah (HQ buat sekolah, akun admin, setting, kelas). Ini akan jadi pemakai pertama guard RBAC 1c di endpoint nyata. Tunggu aba-aba pemilik.
 
 -----
 
