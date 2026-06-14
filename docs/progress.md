@@ -17,14 +17,14 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** Fase 0 (Pondasi) → potongan **0a–0f SELESAI**. ✅
-- **Sedang menuju:** potongan **0g** — `apps/mobile` (Flutter): rangka + layar cek status API. *Catatan: Flutter dipasang di potongan ini (~1GB), dan layar HP tidak bisa "ditunjukkan" tanpa emulator — buktinya = ter-compile.* *Belum mulai; menunggu aba-aba pemilik.*
-- **Bukti terakhir yang berjalan:** `apps/portal` (Preact) — `vite build` hijau, total bundle **~15KB** (jauh di bawah ambang 200KB), cek `/health` tertanam di bundle, halaman ter-serve HTTP 200.
+- **Posisi sekarang:** Fase 0 (Pondasi) → potongan **0a–0g SELESAI**. ✅
+- **Sedang menuju:** potongan **0h** — `infra/docker-compose.dev.yml` (postgres, redis, api, web) — menyatukan semuanya jadi `docker compose up`. *Belum mulai; menunggu aba-aba pemilik.*
+- **Bukti terakhir yang berjalan:** `apps/mobile` (Flutter 3.44.2) — `flutter analyze` bersih, `flutter test` 1/1 lulus, `flutter build web` sukses (compile penuh termasuk model Dart hasil 0b → utang 0b lunas).
 - **Catatan infra:** PostgreSQL dev berjalan via kontainer Docker `magnoo-postgres` (port 5432, user/pass/db = magnoo). Ini sementara; compose resmi dibuat di 0h. Data kontainer belum persisten — kalau kontainer dihapus, jalankan ulang migrasi.
-- **Commit terakhir:** lihat `git log --oneline` di folder ini (potongan 0f ter-commit).
+- **Commit terakhir:** lihat `git log --oneline` di folder ini (potongan 0g ter-commit).
 - **Tanggal sesi terakhir:** 2026-06-14.
 - **Peta lengkap potongan Fase 0:** lihat bagian "🧱 RENCANA FASE 0" di bawah (centang = selesai).
-- **Catatan lingkungan:** perkakas (Git/Node20/pnpm9/Docker) sudah terpasang di server. Flutter dipasang nanti (potong 0g). Dokumen "manusia" (21 file) tertata di folder `00–05` DI LUAR repo ini; folder coding sengaja dijaga bersih (kode + 3 file inti saja).
+- **Catatan lingkungan:** perkakas (Git/Node20/pnpm9/Docker) terpasang. **Flutter 3.44.2 terpasang di `/opt/flutter`** — sesi baru WAJIB tambahkan ke PATH: `export PATH="/opt/flutter/bin:$PATH"` (dan `git config --global --add safe.directory /opt/flutter`). Dokumen "manusia" (21 file) tertata di folder `00–05` DI LUAR repo ini; folder coding dijaga bersih.
 
 -----
 
@@ -52,7 +52,7 @@
 - [x] **0d** Prisma + seluruh skema database BAGIAN 6 (cloud 6.1–6.3) + migrasi pertama
 - [x] **0e** `apps/web` (Next.js) — rangka + halaman cek status API
 - [x] **0f** `apps/portal` (Preact) — rangka super ringan + cek status (<200KB)
-- [ ] **0g** `apps/mobile` (Flutter) — rangka + layar cek status API (Flutter dipasang saat potong ini)
+- [x] **0g** `apps/mobile` (Flutter) — rangka + layar cek status API (Flutter dipasang saat potong ini)
 - [ ] **0h** `infra/docker-compose.dev.yml` (postgres, redis, api, web)
 - [ ] **0i** Skrip seed: 1 sekolah, 1 kelas, 1 admin, 5 siswa, 2 guru, 2 ortu
 - [ ] **0j** GitHub Actions (lint, typecheck, test, build)
@@ -70,7 +70,8 @@
 - **Utang (0d):** sifat *append-only* `AuditLog` & `PointLedger` belum ditegakkan — baru aturan di dokumen. Tegakkan di lapisan service saat tabel ini mulai dipakai (AuditLog: Fase 1; PointLedger: Fase 5).
 - **Utang (0d):** kolom waktu pakai `timestamp` biasa; pertimbangkan pindah ke `timestamptz` bila perlu ketegasan zona waktu di level DB. Saat ini UTC dijaga di aplikasi.
 - **Utang (0d):** UUID dibuat di aplikasi; bila ingin persis spec (`gen_random_uuid()` sisi DB), ganti `@default(uuid())` → `@default(dbgenerated("gen_random_uuid()")) @db.Uuid` (butuh migrasi).
-- **Utang (0d):** nilai enum `RewardType/RedemptionStatus/PartnerStatus/JobStatus` dipilih sendiri — konfirmasi/َsesuaikan saat fitur terkait dibangun (Fase 5 & 7).
+- **Utang (0d):** nilai enum `RewardType/RedemptionStatus/PartnerStatus/JobStatus` dipilih sendiri — konfirmasi/sesuaikan saat fitur terkait dibangun (Fase 5 & 7).
+- **Utang (0g):** model Dart masih DISALIN manual dari `packages/shared/generated` ke `apps/mobile/lib/generated`. Jadikan langkah build otomatis (skrip generate menulis langsung ke mobile, atau melos hook) saat mulai garap layar HP sungguhan (Fase 1).
 
 -----
 
@@ -99,6 +100,32 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-14 — Fase 0g: rangka aplikasi HP apps/mobile (Flutter)
+
+**Yang dikerjakan:** Memasang Flutter, lalu membuat rangka aplikasi HP. Ada satu layar yang menyapa backend dan menampilkan status koneksi (warna identitas Magnoo). Berkas model Dart hasil 0b ikut dipakai di layar ini, supaya terbukti benar-benar bisa dipakai di aplikasi HP.
+
+**File yang dibuat/diubah (semua di `apps/mobile`):**
+- Proyek Flutter (`flutter create`): `pubspec.yaml` (+`http`), `android/`, `web/`, `lib/`, `test/`, dll.
+- `lib/main.dart` — layar status (panggil `/health`), tema warna Magnoo, memakai `Role` dari model bersama.
+- `lib/generated/magnoo_models.dart` — SALINAN hasil generator 0b (dipakai → terbukti compile).
+- `analysis_options.yaml` — kecualikan `lib/generated/**` dari lint gaya.
+- `test/widget_test.dart` — tes: layar menampilkan brand + status awal.
+
+**Keputusan kecil yang diambil:**
+- Flutter dipasang via tarball resmi Google (GitHub clone gagal/terblokir) ke `/opt/flutter`.
+- Model Dart untuk sementara DISALIN dari `packages/shared/generated`; penyatuan jadi langkah build otomatis = utang (lihat Utang).
+- `melos` (manajer multi-paket Dart) ditunda — belum perlu untuk satu paket.
+
+**Sudah dibuktikan jalan?** Ya — `flutter analyze` **bersih (No issues)**, `flutter test` **1/1 lulus**, `flutter build web` **sukses** (compile penuh ke JS, termasuk model 0b). Catatan jujur: layar tidak "ditunjukkan" karena tak ada emulator/Chrome; bukti = compile + test bersih. "Menyapa server di layar HP" terlihat saat dijalankan di HP/emulator nanti.
+
+**Sudah di-commit?** Ya — `feat(mobile): Flutter skeleton with API health screen, consumes generated Dart models (Fase 0g)`.
+
+**Status:** Selesai (potongan 0g dari 10). **Utang 0b lunas**: berkas Dart generator terbukti compile di Flutter.
+
+**Langkah berikutnya:** Potongan **0h** — `infra/docker-compose.dev.yml` (postgres, redis, api, web) → `docker compose up` semua hijau. Menunggu aba-aba pemilik.
 
 -----
 
