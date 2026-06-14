@@ -1,0 +1,751 @@
+// Magnoo — skema database CLOUD (BAGIAN 6.1–6.3 aplikasi.md).
+//
+// Konvensi (BAGIAN 6): setiap tabel punya id (UUID), createdAt, updatedAt.
+// Soft-delete via deletedAt untuk entitas bersejarah (User, School, Class).
+// Waktu diperlakukan UTC di lapisan aplikasi (lihat catatan progress.md 0d).
+//
+// PRIVASI (ADR-005 / guardrail #2): TIDAK ADA PII siswa di sini.
+//   - User.displayName boleh-null dan HANYA untuk dewasa; null untuk STUDENT.
+//   - Nama/NIS/tanggal-lahir siswa hanya di database Box (skema 6.4, Fase 3) — bukan di sini.
+//
+// Batas modul (ADR-003): sebagian besar referensi antar-modul = ID string biasa
+// (bukan foreign key keras), kecuali relasi yang dicontohkan spec (School <-> Device).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum SchoolStatus {
+  ONBOARDING
+  ACTIVE
+  PAUSED
+  TERMINATED
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  SCHOOL_ADMIN
+  PRINCIPAL
+  PARENT
+  ALUMNI
+  PARTNER
+  HQ_ADMIN
+  HQ_OPS
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  LOCKED
+  PENDING_CONSENT
+}
+
+enum LinkStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum ConsentType {
+  GENERAL_DATA
+  FACE
+  PUBLICATION
+  ALUMNI_CAREER
+  TOS
+}
+
+enum AttType {
+  IN
+  OUT
+  CORRECTION
+}
+
+enum AttMethod {
+  QR
+  FACE
+  MANUAL
+}
+
+enum AttStatus {
+  PRESENT
+  LATE
+}
+
+enum FinalAtt {
+  PRESENT
+  LATE
+  PERMIT
+  SICK
+  ABSENT_NO_INFO
+}
+
+enum PermitType {
+  SICK
+  FAMILY
+  DISPENSATION
+  OTHER
+}
+
+enum PermitStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum AnnScope {
+  CLASS
+  GRADE
+  SCHOOL
+  PARENTS
+}
+
+enum ThreadType {
+  PARENT_HOMEROOM
+  CLASS_ROOM
+  APPLICATION
+}
+
+enum PointSource {
+  QUIZ
+  CHALLENGE
+  REDEMPTION
+  ADJUSTMENT
+}
+
+// Nilai tidak dirinci di spec — dipilih wajar, dicatat di progress.md (mudah diubah).
+enum RewardType {
+  PULSA
+  DATA
+  VOUCHER
+  MERCH
+  OTHER
+}
+
+// Nilai tidak dirinci di spec — dipilih wajar, dicatat di progress.md.
+enum RedemptionStatus {
+  PENDING
+  APPROVED
+  FULFILLED
+  REJECTED
+  CANCELLED
+}
+
+enum PartnerType {
+  UNIVERSITY
+  COMPANY
+  BRAND
+  SPONSOR
+  RESEARCH
+}
+
+// Nilai tidak dirinci di spec — dipilih wajar, dicatat di progress.md.
+enum PartnerStatus {
+  PROSPECT
+  ACTIVE
+  SUSPENDED
+  ENDED
+}
+
+enum CampaignStatus {
+  DRAFT
+  PENDING_PAYMENT
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+enum CreativeStatus {
+  SUBMITTED
+  AI_FLAGGED
+  APPROVED
+  REJECTED
+}
+
+enum AdSurface {
+  PORTAL
+  APP_SLOT
+}
+
+enum AiFeature {
+  TEACHER_GEN
+  TEACHER_GRADE
+  REPORT_NARRATIVE
+  TUTOR
+  BIZ_MENTOR
+  PARENT_DIGEST
+}
+
+// Selaras dengan /ai/teacher/generate type (BAGIAN 8.2).
+enum MaterialType {
+  MODULE
+  QUESTION_SET
+  REPORT_NARRATIVE
+}
+
+enum MaterialStatus {
+  DRAFT
+  APPROVED
+}
+
+enum CareerStatus {
+  WORKING
+  STUDYING
+  BUSINESS
+  SEEKING
+  UNKNOWN
+}
+
+enum JobType {
+  FULLTIME
+  INTERN
+  PKL
+}
+
+// Nilai tidak dirinci di spec — dipilih wajar, dicatat di progress.md.
+enum JobStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  EXPIRED
+}
+
+enum AppStatus {
+  APPLIED
+  SHORTLIST
+  INTERVIEW
+  HIRED
+  REJECTED
+  WITHDRAWN
+}
+
+enum NotifChannel {
+  PUSH
+  WA
+  INAPP
+}
+
+enum NotifStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+}
+
+enum EwsStatus {
+  OPEN
+  ACTIONED
+  DISMISSED
+}
+
+enum IdeaStatus {
+  SUBMITTED
+  SHORTLISTED
+  INCUBATED
+  ALUM
+}
+
+// ============================================================
+// 6.1 — TENANCY & IDENTITY
+// ============================================================
+
+model School {
+  id        String       @id @default(uuid())
+  npsn      String       @unique
+  name      String
+  city      String
+  province  String       @default("Jawa Timur")
+  timezone  String       @default("Asia/Jakarta")
+  status    SchoolStatus
+  settings  Json
+  boxes     Device[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  deletedAt DateTime?
+}
+
+model User {
+  id                 String     @id @default(uuid())
+  schoolId           String? // null untuk HQ & partner user
+  role               Role
+  username           String // siswa: NIS (unik per sekolah); dewasa: email/phone
+  passwordHash       String
+  status             UserStatus
+  // PII dewasa boleh; PII SISWA DILARANG (ADR-005):
+  displayName        String? // null untuk STUDENT — nama siswa hanya di Box
+  phone              String? // hanya dewasa
+  email              String? // hanya dewasa
+  classId            String? // untuk STUDENT
+  graduationYear     Int? // untuk STUDENT/ALUMNI
+  mustChangePassword Boolean    @default(true)
+  failedLoginCount   Int        @default(0)
+  lockedUntil        DateTime?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  deletedAt          DateTime?
+
+  @@unique([schoolId, username])
+}
+
+model UserRoleLink {
+  id            String   @id @default(uuid())
+  primaryUserId String // akun login utama
+  linkedUserId  String // akun role lain milik orang yang sama
+  verifiedBy    String? // school admin yang memverifikasi
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Session {
+  id               String    @id @default(uuid())
+  userId           String
+  deviceId         String // fingerprint perangkat
+  deviceName       String?
+  refreshTokenHash String
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Class {
+  id                String    @id @default(uuid())
+  schoolId          String
+  academicYear      String // "2026/2027"
+  grade             Int // 10 | 11 | 12
+  major             String? // jurusan SMK
+  label             String // "XI-TKJ-2"
+  homeroomTeacherId String? // wali kelas
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+}
+
+model ParentLink {
+  id            String     @id @default(uuid())
+  parentUserId  String
+  studentUserId String
+  inviteCodeId  String
+  status        LinkStatus
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@unique([parentUserId, studentUserId])
+}
+
+model InviteCode {
+  id            String    @id @default(uuid())
+  code          String    @unique // 8 char alfanumerik
+  studentUserId String
+  expiresAt     DateTime // 30 hari
+  usedAt        DateTime?
+  revokedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model ConsentRecord {
+  id              String      @id @default(uuid())
+  subjectUserId   String // siswa ybs
+  grantedByUserId String? // ortu (atau alumni sendiri saat 18+)
+  type            ConsentType
+  docVersion      String
+  grantedAt       DateTime
+  revokedAt       DateTime?
+  evidenceRef     String? // nomor arsip formulir fisik
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+// APPEND-ONLY: tidak ada update/delete. Ditegakkan di service layer (utang fase berikut).
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String
+  action      String // "ATTENDANCE_CORRECT", "USER_DEACTIVATE", ...
+  entity      String
+  entityId    String
+  before      Json?
+  after       Json?
+  ip          String?
+  createdAt   DateTime @default(now())
+}
+
+// ============================================================
+// 6.2 — ATTENDANCE & COMMS
+// ============================================================
+
+// IMMUTABLE: koreksi = event baru type CORRECTION.
+model AttendanceEvent {
+  id               String    @id @default(uuid())
+  userId           String
+  schoolId         String
+  date             String // "2026-07-21" (tanggal sekolah, timezone sekolah)
+  type             AttType
+  method           AttMethod
+  status           AttStatus
+  occurredAt       DateTime
+  sourceEventId    String? // utk CORRECTION: event yang dikoreksi
+  correctedBy      String?
+  correctionReason String?
+  boxEventId       String?   @unique // idempotency key dari Box
+  createdAt        DateTime  @default(now())
+
+  @@index([schoolId, date])
+  @@index([userId, date])
+}
+
+// Materialized hasil hitung per siswa per hari.
+model DailyAttendanceStatus {
+  id          String   @id @default(uuid())
+  userId      String
+  schoolId    String
+  date        String
+  finalStatus FinalAtt
+  firstInAt   DateTime?
+  lastOutAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, date])
+}
+
+model Permit {
+  id                String       @id @default(uuid())
+  studentUserId     String
+  requestedByUserId String // siswa atau ortu
+  type              PermitType
+  dateStart         String
+  dateEnd           String
+  note              String
+  attachmentUrl     String? // max 5MB, jpg/png/pdf
+  status            PermitStatus
+  decidedByUserId   String?
+  decidedAt         DateTime?
+  decisionNote      String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+}
+
+model Announcement {
+  id          String    @id @default(uuid())
+  schoolId    String
+  authorUserId String
+  scope       AnnScope
+  scopeIds    String[] // classIds / grade numbers
+  title       String
+  body        String
+  attachments Json?
+  publishedAt DateTime
+  retractedAt DateTime? // boleh <=15 menit setelah publish (rule 10.6)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Thread {
+  id             String     @id @default(uuid())
+  schoolId       String
+  type           ThreadType
+  contextId      String // classId / applicationId
+  participantIds String[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
+
+model Message {
+  id           String   @id @default(uuid())
+  threadId     String
+  senderUserId String
+  body         String
+  templateKey  String? // ortu mulai dari template (rule 10.7)
+  createdAt    DateTime @default(now())
+}
+
+// ============================================================
+// 6.3 — GAMIFICATION, ADS, AI, CAREER, OPS
+// ============================================================
+
+// APPEND-ONLY. Saldo = SUM(delta). Tidak ada kolom "balance" yang diedit.
+model PointLedger {
+  id        String      @id @default(uuid())
+  userId    String
+  delta     Int
+  source    PointSource
+  refId     String?
+  createdAt DateTime    @default(now())
+}
+
+model Quiz {
+  id                String   @id @default(uuid())
+  schoolScope       Json
+  title             String
+  questions         Json
+  rewardPoints      Int
+  sponsorCampaignId String?
+  activeDate        String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model QuizAttempt {
+  id         String   @id @default(uuid())
+  quizId     String
+  userId     String
+  answers    Json
+  score      Int
+  durationMs Int
+  flagged    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@unique([quizId, userId])
+}
+
+model RewardItem {
+  id        String     @id @default(uuid())
+  name      String
+  cost      Int
+  type      RewardType
+  stock     Int
+  active    Boolean
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Redemption {
+  id             String           @id @default(uuid())
+  userId         String
+  rewardItemId   String
+  status         RedemptionStatus
+  idempotencyKey String           @unique
+  fulfilledAt    DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model Partner {
+  id          String        @id @default(uuid())
+  name        String
+  type        PartnerType
+  status      PartnerStatus
+  billingInfo Json
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model AdCampaign {
+  id           String         @id @default(uuid())
+  partnerId    String
+  package      String // KENALAN | KOTA | KORIDOR | BRAND_SLOT | ...
+  target       Json // { cities[], schoolIds[], grades[], majors[], roles[] } — HANYA ini (rule 10.8)
+  periodStart  String
+  periodEnd    String
+  status       CampaignStatus
+  pausedReason String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model AdCreative {
+  id             String         @id @default(uuid())
+  campaignId     String
+  assetUrl       String
+  landingUrl     String?
+  copy           String
+  status         CreativeStatus
+  aiScreenResult Json?
+  reviewerUserId String?
+  rejectReason   String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+// TANPA userId — hanya agregat-able (privasi by design, guardrail #4).
+model AdImpression {
+  id         String    @id @default(uuid())
+  creativeId String
+  schoolId   String
+  role       Role
+  surface    AdSurface
+  ts         DateTime  @default(now())
+}
+
+model AdClick {
+  id         String   @id @default(uuid())
+  creativeId String
+  schoolId   String
+  role       Role
+  ts         DateTime @default(now())
+}
+
+model AiUsage {
+  id           String    @id @default(uuid())
+  schoolId     String
+  userId       String
+  feature      AiFeature
+  tokensIn     Int
+  tokensOut    Int
+  costEstimate Decimal   @db.Decimal(14, 2)
+  cached       Boolean
+  createdAt    DateTime  @default(now())
+}
+
+model AiQuota {
+  id                String    @id @default(uuid())
+  scope             String // "school:<id>" | "user:<id>"
+  feature           AiFeature
+  dailyLimit        Int
+  monthlyCostCapIdr Int
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model TeacherMaterial {
+  id             String         @id @default(uuid())
+  schoolId       String
+  classId        String
+  authorUserId   String
+  type           MaterialType
+  title          String
+  content        Json
+  status         MaterialStatus
+  sharedToSchool Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model AlumniProfile {
+  id              String       @id @default(uuid())
+  userId          String       @unique
+  visibilityOptIn Boolean      @default(false) // default TERSEMBUNYI (rule 10.9)
+  careerStatus    CareerStatus
+  verifiedData    Json // dari sekolah, read-only utk alumni
+  selfData        Json // diisi alumni
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model JobPost {
+  id           String    @id @default(uuid())
+  partnerId    String
+  title        String
+  majorTargets String[]
+  cityTargets  String[]
+  salaryMin    Int
+  salaryMax    Int
+  type         JobType
+  status       JobStatus
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model JobApplication {
+  id           String    @id @default(uuid())
+  jobPostId    String
+  alumniUserId String
+  status       AppStatus
+  threadId     String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([jobPostId, alumniUserId])
+}
+
+// Magnoo Box fleet. id = box serial "MAGNOO-0001" (bukan UUID).
+model Device {
+  id               String    @id
+  schoolId         String?
+  pairedAt         DateTime?
+  pairingTokenHash String?
+  swVersion        String?
+  lastSeenAt       DateTime?
+  health           Json?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  school School? @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+}
+
+model FeatureFlag {
+  id        String   @id @default(uuid())
+  key       String
+  schoolId  String?
+  enabled   Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([key, schoolId])
+}
+
+model NotificationLog {
+  id          String       @id @default(uuid())
+  userId      String
+  channel     NotifChannel
+  templateKey String
+  payloadRef  Json
+  status      NotifStatus
+  createdAt   DateTime     @default(now())
+}
+
+// Produk "paket leads" kampus: OPT-IN eksplisit (rule 10.8 / guardrail #4).
+model CampaignLead {
+  id             String    @id @default(uuid())
+  campaignId     String
+  schoolId       String
+  consentChecked Boolean // wajib true; siswa/ortu mengisi sendiri
+  payload        Json
+  forwardedAt    DateTime?
+  createdAt      DateTime  @default(now())
+}
+
+model UserPreference {
+  id                   String   @id @default(uuid())
+  userId               String   @unique
+  mutedOfferCategories String[]
+  notifSettings        Json
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+// Fase 8 — privat wali kelas/BK, TANPA skor ranking (guardrail #6).
+model EwsAlert {
+  id               String    @id @default(uuid())
+  studentUserId    String
+  schoolId         String
+  classId          String
+  ruleTriggered    String // "ABSENT_3_CONSECUTIVE" | "LATE_TREND_UP"
+  evidence         Json
+  status           EwsStatus
+  actionedByUserId String?
+  actionNote       String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+// Fase 8 — modul wirausaha.
+model StartupIdea {
+  id                String     @id @default(uuid())
+  schoolId          String
+  ownerUserId       String
+  title             String
+  summary           String
+  batch             String
+  status            IdeaStatus
+  mentorUserIds     String[]
+  threadId          String?
+  sponsorCampaignId String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+}

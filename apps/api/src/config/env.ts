@@ -11,8 +11,10 @@ export const envSchema = z.object({
     .default("development"),
   PORT: z.coerce.number().int().positive().default(3000),
 
+  // Wajib sejak Fase 0d (backend memerlukan database):
+  DATABASE_URL: z.string().url(),
+
   // Disiapkan untuk fase berikut (opsional dulu):
-  DATABASE_URL: z.string().url().optional(),
   REDIS_URL: z.string().url().optional(),
   JWT_ACCESS_SECRET: z.string().optional(),
   JWT_REFRESH_SECRET: z.string().optional(),

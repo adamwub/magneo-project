@@ -17,10 +17,11 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** Fase 0 (Pondasi) → potongan **0a, 0b & 0c SELESAI**. ✅
-- **Sedang menuju:** potongan **0d** — Prisma + seluruh skema database BAGIAN 6 + migrasi pertama (butuh PostgreSQL; pakai Docker). *Belum mulai; menunggu aba-aba pemilik.*
-- **Bukti terakhir yang berjalan:** `apps/api` — server NestJS boot, `GET /health` membalas `{"status":"ok"}` HTTP 200, 13 modul termuat, prefix `/api/v1` aktif. typecheck/build/test hijau.
-- **Commit terakhir:** lihat `git log --oneline` di folder ini (potongan 0c ter-commit).
+- **Posisi sekarang:** Fase 0 (Pondasi) → potongan **0a–0d SELESAI**. ✅
+- **Sedang menuju:** potongan **0e** — `apps/web` (Next.js): rangka + halaman cek status API. *Belum mulai; menunggu aba-aba pemilik.*
+- **Bukti terakhir yang berjalan:** database — migrasi `init` membuat **38 tabel + 32 enum**; Prisma Client menyambung (`school.count()=0`); server NestJS boot dengan PrismaModule + `/health` HTTP 200. typecheck/build hijau.
+- **Catatan infra:** PostgreSQL dev berjalan via kontainer Docker `magnoo-postgres` (port 5432, user/pass/db = magnoo). Ini sementara; compose resmi dibuat di 0h. Data kontainer belum persisten — kalau kontainer dihapus, jalankan ulang migrasi.
+- **Commit terakhir:** lihat `git log --oneline` di folder ini (potongan 0d ter-commit).
 - **Tanggal sesi terakhir:** 2026-06-14.
 - **Peta lengkap potongan Fase 0:** lihat bagian "🧱 RENCANA FASE 0" di bawah (centang = selesai).
 - **Catatan lingkungan:** perkakas (Git/Node20/pnpm9/Docker) sudah terpasang di server. Flutter dipasang nanti (potong 0g). Dokumen "manusia" (21 file) tertata di folder `00–05` DI LUAR repo ini; folder coding sengaja dijaga bersih (kode + 3 file inti saja).
@@ -48,7 +49,7 @@
 - [x] **0a** Pasang perkakas + `git init` + kerangka monorepo (BAGIAN 5)
 - [x] **0b** `packages/shared` — skema zod inti (auth, error codes, attendance) + skrip generate model Dart
 - [x] **0c** `apps/api` (NestJS) — rangka + pembaca `.env` + endpoint `/health` + stub 13 modul
-- [ ] **0d** Prisma + seluruh skema database BAGIAN 6 + migrasi pertama
+- [x] **0d** Prisma + seluruh skema database BAGIAN 6 (cloud 6.1–6.3) + migrasi pertama
 - [ ] **0e** `apps/web` (Next.js) — rangka + halaman cek status API
 - [ ] **0f** `apps/portal` (Preact) — rangka super ringan + cek status (<200KB)
 - [ ] **0g** `apps/mobile` (Flutter) — rangka + layar cek status API (Flutter dipasang saat potong ini)
@@ -66,6 +67,10 @@
 
 - [contoh] Ide: tambah fitur notifikasi suara — tunda, bahas saat Fase 2.
 - [contoh] Utang: validasi nomor HP ortu masih sederhana, perlu diperketat di Fase 1 akhir.
+- **Utang (0d):** sifat *append-only* `AuditLog` & `PointLedger` belum ditegakkan — baru aturan di dokumen. Tegakkan di lapisan service saat tabel ini mulai dipakai (AuditLog: Fase 1; PointLedger: Fase 5).
+- **Utang (0d):** kolom waktu pakai `timestamp` biasa; pertimbangkan pindah ke `timestamptz` bila perlu ketegasan zona waktu di level DB. Saat ini UTC dijaga di aplikasi.
+- **Utang (0d):** UUID dibuat di aplikasi; bila ingin persis spec (`gen_random_uuid()` sisi DB), ganti `@default(uuid())` → `@default(dbgenerated("gen_random_uuid()")) @db.Uuid` (butuh migrasi).
+- **Utang (0d):** nilai enum `RewardType/RedemptionStatus/PartnerStatus/JobStatus` dipilih sendiri — konfirmasi/َsesuaikan saat fitur terkait dibangun (Fase 5 & 7).
 
 -----
 
@@ -94,6 +99,35 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-14 — Fase 0d: database (Prisma + skema BAGIAN 6 + migrasi pertama)
+
+**Yang dikerjakan:** Memberi bentuk nyata pada database. Menyalakan PostgreSQL (lewat Docker), menuliskan seluruh "denah" tabel sesuai BAGIAN 6 (sekolah, user, kelas, absensi, izin, pengumuman, poin, kuis, reward, mitra, iklan, AI, alumni, lowongan, box, notifikasi, EWS, startup), lalu menjalankan "migrasi" pertama yang benar-benar membuat semua tabel itu. Backend kini punya penyambung ke database (`PrismaService`).
+
+**File yang dibuat/diubah (semua di `apps/api`):**
+- `prisma/schema.prisma` — 38 tabel + 32 enum (BAGIAN 6.1–6.3).
+- `prisma/migrations/20260614040151_init/` — migrasi pertama (di-commit).
+- `src/prisma/prisma.service.ts` + `prisma.module.ts` (global) — penyambung DB.
+- `src/app.module.ts` — pasang `PrismaModule`.
+- `src/config/env.ts` — `DATABASE_URL` jadi wajib.
+- `package.json` (deps `prisma` + `@prisma/client`, skrip), `.env.example`, `.env` (lokal, tidak di-commit).
+
+**Keputusan kecil yang diambil (mudah diubah, dicatat agar tidak ditebak ulang):**
+- **PII siswa NOL di cloud** (ADR-005): tabel `User` tanpa nama/NIS/tgl-lahir siswa; `displayName` null untuk siswa. Tabel Box 6.4 (`student_pii` dll) sengaja DITUNDA ke Fase 3.
+- UUID dibuat di sisi aplikasi (`@default(uuid())`) alih-alih `gen_random_uuid()` DB — setara fungsinya, lebih sederhana. (lihat Utang)
+- Waktu disimpan sebagai `timestamp` biasa, diperlakukan UTC di aplikasi (bukan `timestamptz`). (lihat Utang)
+- Beberapa enum yang nilainya tidak dirinci spec diisi wajar: `RewardType`, `RedemptionStatus`, `PartnerStatus`, `JobStatus`.
+- Relasi keras hanya `School ↔ Device` (dicontohkan spec); referensi lain = ID string biasa demi batas modul (ADR-003).
+
+**Sudah dibuktikan jalan?** Ya: `prisma migrate dev --name init` sukses; database berisi **38 tabel + 32 enum** (dihitung dari `information_schema`); Prisma Client menyambung & `school.count()` = 0, `user.count()` = 0; server NestJS boot dengan `PrismaModule` termuat dan `/health` HTTP 200; typecheck + `nest build` hijau.
+
+**Sudah di-commit?** Ya — `feat(api): full BAGIAN 6 Prisma schema, first migration, PrismaService (Fase 0d)`.
+
+**Status:** Selesai (potongan 0d dari 10).
+
+**Langkah berikutnya:** Potongan **0e** — rangka `apps/web` (Next.js) + halaman cek status API. Menunggu aba-aba pemilik.
 
 -----
 

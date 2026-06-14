@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { validateEnv } from "./config/env";
+import { PrismaModule } from "./prisma/prisma.module";
 import { HealthModule } from "./health/health.module";
 
 // Modul fitur (ADR-003 modular monolith) — stub di Fase 0c, diisi pada fasenya.
@@ -24,6 +25,7 @@ import { FeatureFlagsModule } from "./modules/feature-flags/feature-flags.module
       isGlobal: true,
       validate: validateEnv,
     }),
+    PrismaModule,
     HealthModule,
     // 13 modul fitur (kosong dulu):
     AuthModule,
