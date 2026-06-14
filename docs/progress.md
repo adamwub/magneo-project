@@ -17,11 +17,11 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** Fase 0 (Pondasi) → potongan **0a–0e SELESAI**. ✅
-- **Sedang menuju:** potongan **0f** — `apps/portal` (Preact, captive portal super ringan <200KB) + cek status API. *Belum mulai; menunggu aba-aba pemilik.*
-- **Bukti terakhir yang berjalan:** `apps/web` (Next.js) — `next build` hijau, halaman `/` (server-side) memanggil API & menampilkan "API terhubung" + `magnoo-api`, HTTP 200. API+web berjalan bersama.
+- **Posisi sekarang:** Fase 0 (Pondasi) → potongan **0a–0f SELESAI**. ✅
+- **Sedang menuju:** potongan **0g** — `apps/mobile` (Flutter): rangka + layar cek status API. *Catatan: Flutter dipasang di potongan ini (~1GB), dan layar HP tidak bisa "ditunjukkan" tanpa emulator — buktinya = ter-compile.* *Belum mulai; menunggu aba-aba pemilik.*
+- **Bukti terakhir yang berjalan:** `apps/portal` (Preact) — `vite build` hijau, total bundle **~15KB** (jauh di bawah ambang 200KB), cek `/health` tertanam di bundle, halaman ter-serve HTTP 200.
 - **Catatan infra:** PostgreSQL dev berjalan via kontainer Docker `magnoo-postgres` (port 5432, user/pass/db = magnoo). Ini sementara; compose resmi dibuat di 0h. Data kontainer belum persisten — kalau kontainer dihapus, jalankan ulang migrasi.
-- **Commit terakhir:** lihat `git log --oneline` di folder ini (potongan 0e ter-commit).
+- **Commit terakhir:** lihat `git log --oneline` di folder ini (potongan 0f ter-commit).
 - **Tanggal sesi terakhir:** 2026-06-14.
 - **Peta lengkap potongan Fase 0:** lihat bagian "🧱 RENCANA FASE 0" di bawah (centang = selesai).
 - **Catatan lingkungan:** perkakas (Git/Node20/pnpm9/Docker) sudah terpasang di server. Flutter dipasang nanti (potong 0g). Dokumen "manusia" (21 file) tertata di folder `00–05` DI LUAR repo ini; folder coding sengaja dijaga bersih (kode + 3 file inti saja).
@@ -51,7 +51,7 @@
 - [x] **0c** `apps/api` (NestJS) — rangka + pembaca `.env` + endpoint `/health` + stub 13 modul
 - [x] **0d** Prisma + seluruh skema database BAGIAN 6 (cloud 6.1–6.3) + migrasi pertama
 - [x] **0e** `apps/web` (Next.js) — rangka + halaman cek status API
-- [ ] **0f** `apps/portal` (Preact) — rangka super ringan + cek status (<200KB)
+- [x] **0f** `apps/portal` (Preact) — rangka super ringan + cek status (<200KB)
 - [ ] **0g** `apps/mobile` (Flutter) — rangka + layar cek status API (Flutter dipasang saat potong ini)
 - [ ] **0h** `infra/docker-compose.dev.yml` (postgres, redis, api, web)
 - [ ] **0i** Skrip seed: 1 sekolah, 1 kelas, 1 admin, 5 siswa, 2 guru, 2 ortu
@@ -99,6 +99,29 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-14 — Fase 0f: rangka captive portal apps/portal (Preact)
+
+**Yang dikerjakan:** Membuat rangka halaman login WiFi (captive portal) — halaman yang muncul saat siswa menyambung WiFi sekolah. Dibuat seringan mungkin karena harus cepat di HP murah & jalan dari Box. Berisi logo, kolom login (belum berfungsi — baru tampilan), info jam WiFi, dan indikator "server terhubung / mode lokal".
+
+**File yang dibuat (semua di `apps/portal`):**
+- `package.json`, `vite.config.ts`, `tsconfig.json`, `index.html`.
+- `src/main.tsx` (titik nyala), `src/app.tsx` (UI portal + cek `/health`), `src/style.css` (ringan, tanpa font eksternal), `src/vite-env.d.ts`.
+
+**Keputusan kecil yang diambil:**
+- Portal **TIDAK** memakai `@magnoo/shared` — paket itu membawa zod (berat) yang akan melanggar batas <200KB. Portal berdiri sendiri seramping mungkin (ADR-002).
+- Indikator status dijalankan di sisi browser (client-side) — wajar untuk halaman statis yang juga di-serve dari Box.
+- Tanpa font eksternal (syarat offline BAGIAN 9.3). Port preview = 3002. Alamat API via `VITE_API_URL`.
+
+**Sudah dibuktikan jalan?** Ya — `vite build` hijau; total bundle **~15KB** (16.272 byte, ambang 200KB = 204.800 byte) → **jauh di bawah batas**; string `/health` terbukti tertanam di bundle (logika cek server ikut); `vite preview` melayani halaman dengan HTTP 200 & judul "Login WiFi Magnoo". typecheck hijau.
+
+**Sudah di-commit?** Ya — `feat(portal): Preact captive portal skeleton, ~15KB, API health check (Fase 0f)`.
+
+**Status:** Selesai (potongan 0f dari 10).
+
+**Langkah berikutnya:** Potongan **0g** — rangka `apps/mobile` (Flutter). Flutter dipasang di potongan ini; bukti = ter-compile (tanpa emulator). Menunggu aba-aba pemilik.
 
 -----
 
