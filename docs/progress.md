@@ -17,11 +17,11 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** **FASE 0 (Pondasi) SELESAI** — potongan **0a–0j semua ✅**. Pondasi monorepo tuntas.
+- **Posisi sekarang:** **SIAP MASUK FASE 1.** Fase 0 (Pondasi) SELESAI — potongan **0a–0j semua ✅**. Pondasi monorepo tuntas.
 - **Sedang menuju:** **Fase 1** — Akun & pintu masuk (auth, RBAC, provisioning, impor XLSX, invite code ortu). *Belum mulai; menunggu aba-aba pemilik.* Di sinilah keputusan "pseudonim NIS" (lihat Ide & Utang) harus diputuskan.
 - **Bukti terakhir yang berjalan:** CI (`.github/workflows/ci.yml`) — seluruh langkah lulus lokal: node job (lint ✅, typecheck ✅, test 8/8 ✅, build ✅) + flutter job (analyze "No issues" ✅, test 1/1 ✅). Catatan: centang hijau di GitHub butuh repo di-push (belum ada remote).
 - **Catatan infra:** PostgreSQL dev kini lewat **compose resmi** (`infra/docker-compose.dev.yml`), volume bernama `magnoo-postgres-data` → **data persisten**. Nyalakan semua: `pnpm dev:infra` (atau `docker compose -f infra/docker-compose.dev.yml up --build`); matikan: `pnpm dev:infra:down`. API otomatis `prisma migrate deploy` saat start. Kontainer Postgres lama yang berdiri sendiri sudah dihapus (digantikan compose).
-- **Commit terakhir:** lihat `git log --oneline` di folder ini (potongan 0g ter-commit).
+- **Commit terakhir:** `1b49cfd` (potongan 0j — CI). Lihat `git log --oneline` untuk riwayat lengkap.
 - **Tanggal sesi terakhir:** 2026-06-14.
 - **Peta lengkap potongan Fase 0:** lihat bagian "🧱 RENCANA FASE 0" di bawah (centang = selesai).
 - **Catatan lingkungan:** perkakas (Git/Node20/pnpm9/Docker) terpasang. **Flutter 3.44.2 terpasang di `/opt/flutter`** — sesi baru WAJIB tambahkan ke PATH: `export PATH="/opt/flutter/bin:$PATH"` (dan `git config --global --add safe.directory /opt/flutter`). Dokumen "manusia" (21 file) tertata di folder `00–05` DI LUAR repo ini; folder coding dijaga bersih.
