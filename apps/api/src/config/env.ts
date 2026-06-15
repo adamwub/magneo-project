@@ -21,6 +21,10 @@ export const envSchema = z.object({
   JWT_ACCESS_TTL_SEC: z.coerce.number().int().positive().default(60 * 60),
   JWT_REFRESH_TTL_SEC: z.coerce.number().int().positive().default(60 * 60 * 24 * 30),
 
+  // Wajib sejak Fase 1e (provisioning): pepper untuk hash pairing token Box (BAGIAN 16).
+  // Token mentah hanya dikirim sekali; yang disimpan = hash(token + pepper).
+  BOX_PAIRING_PEPPER: z.string().min(16),
+
   // Disiapkan untuk fase berikut (opsional dulu):
   REDIS_URL: z.string().url().optional(),
 });

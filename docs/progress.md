@@ -17,11 +17,11 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1: **1a ✅** (skema bersama), **1b ✅** (auth inti), **1c ✅** (RBAC + audit), **1d ✅** (sesi & peran). Lihat "RENCANA FASE 1" di bawah.
-- **Sedang menuju:** **Potongan 1e** — Provisioning: HQ buat sekolah, pairing token Box, akun admin, setting sekolah, CRUD kelas, wizard kenaikan kelas. *Menunggu aba-aba pemilik sebelum mulai.* (Ini potongan pertama yang memakai guard RBAC 1c pada endpoint nyata.)
-- **Migrasi DB baru:** `20260614141855_session_prev_refresh_hash` (kolom `Session.prevRefreshTokenHash` untuk reuse-detection). Sudah diterapkan ke DB dev.
+- **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1: **1a ✅** (skema bersama), **1b ✅** (auth inti), **1c ✅** (RBAC + audit), **1d ✅** (sesi & peran), **1e ✅** (provisioning). Lihat "RENCANA FASE 1" di bawah.
+- **Sedang menuju:** **Potongan 1f** — Impor XLSX: job BullMQ + validasi per-baris + laporan error ramah + idempotent + **penyamaran NIS** (hash berkunci per sekolah). *Menunggu aba-aba pemilik sebelum mulai.* (Pemakai pertama Redis/BullMQ + transform NIS→samaran yang sudah diputuskan.)
+- **Migrasi DB baru:** `20260615123600_device_pairing_token_expiry` (kolom `Device.pairingTokenExpiresAt` untuk masa-berlaku pairing token Box). Sudah diterapkan ke DB dev. (Sebelumnya: `20260614141855_session_prev_refresh_hash`.)
 - **Keputusan NIS sudah DIAMBIL (2026-06-14):** NIS siswa **DISAMARKAN** di cloud (hash berkunci per sekolah jadi `User.username`), NIS mentah TIDAK pernah disimpan di cloud. Detail di "Keputusan Penting" di bawah. *Penerapan transform NIS→samaran masih menyusul di 1f (impor) & disambung ke login; saat ini login siswa mencocokkan `username` apa adanya + butuh `schoolId`.*
-- **Bukti terakhir yang berjalan:** API auth diuji **terhadap database nyata** (port lokal 3100): login guru & siswa ✅ (token JWT terbit, klaim sub/sid/role/schoolId benar), password salah → error generik ✅, refresh berputar (token baru) ✅, endpoint terproteksi tanpa token → 401 ✅, setuju ToS → 204 & re-login `mustAcceptTos:false` ✅, login siswa tanpa schoolId ditolak ✅. Tes unit: shared 24/24, api 15/15 (lockout, rotasi, dll). typecheck 4/4 ✅, build API ✅.
+- **Bukti terakhir yang berjalan (1e):** alur provisioning diuji **terhadap database nyata** (port lokal 3100): HQ login → buat sekolah (status ONBOARDING) ✅ → pair-box (token sekali-tampil, yang tersimpan = hash) ✅ → akun admin (username `admin`, password sementara sekali-tampil, `mustChangePassword`) ✅ → admin login ✅ → GET/PUT setelan (default 10.1 + override hanya field terkirim) ✅ → buat 2 kelas (grade 10 & 12) ✅ → kenaikan kelas: dryRun pratinjau, lalu confirm (kelas 10→11 baru dibuat, kelas 12 ditandai lulus & tidak dibuat kelas, kelas lama diarsipkan) ✅. **RBAC nyata:** admin→`/hq` 403 ✅, HQ→`/school` 403 ✅, tanpa token 401 ✅. Tes unit: api **49/49** (13 baru untuk 1e), shared 24/24. typecheck/lint/build ✅. *(Bukti 1b–1d sebelumnya tetap berlaku.)*
 - **GitHub:** **belum bisa push** — firewall environment ini memblokir TLS ke `github.com`/`api.github.com` (TCP nyambung, TLS di-drop). Internet umum jalan (cli.github.com & Cloudflare OK). Token & `gh` 2.94 sudah siap. Tindakan: buka firewall (allowlist github.com, api.github.com, codeload.github.com, *.githubusercontent.com:443) ATAU push dari laptop. Backup off-site jadi PR penting — sementara hanya ada satu salinan di server ini.
 - **Catatan infra:** PostgreSQL dev kini lewat **compose resmi** (`infra/docker-compose.dev.yml`), volume bernama `magnoo-postgres-data` → **data persisten**. Nyalakan semua: `pnpm dev:infra` (atau `docker compose -f infra/docker-compose.dev.yml up --build`); matikan: `pnpm dev:infra:down`. API otomatis `prisma migrate deploy` saat start. Kontainer Postgres lama yang berdiri sendiri sudah dihapus (digantikan compose).
 - **Commit terakhir:** lihat `git log --oneline` (1a = `feat(shared): Fase 1 auth & school schemas`).
@@ -72,7 +72,7 @@
 - [x] **1b** Auth inti — JWT access+refresh rotating, `Session`, login (siswa NIS+schoolId / dewasa HP-email), lockout 5×→15 mnt, password policy, first-login (ganti pw + setuju ToS)
 - [x] **1c** RBAC — guard `@Roles` + `@Scope`, enforce scope (guru→kelasnya, admin→sekolahnya, siswa→diri, ortu→anak, HQ→global), 403 + AuditLog append-only
 - [x] **1d** Sesi & peran — batas perangkat (siswa 2 / lain 3), refresh reuse-detection→revoke semua, role-switch (linkRoles), list/revoke sesi
-- [ ] **1e** Provisioning — HQ buat sekolah, pairing token Box, akun admin (sekali tampil), setting sekolah, CRUD kelas, wizard kenaikan kelas (preview→confirm)
+- [x] **1e** Provisioning — HQ buat sekolah, pairing token Box, akun admin (sekali tampil), setting sekolah, CRUD kelas, wizard kenaikan kelas (preview→confirm)
 - [ ] **1f** Impor XLSX — job BullMQ + validasi per-baris + laporan error ramah + idempotent + **penyamaran NIS** (hash berkunci per sekolah)
 - [ ] **1g** Undangan ortu — kode undangan + PDF batch (render server), register ortu + OTP (WA = adapter stub/log), verify-otp, link anak
 - [ ] **1h** Consent & audit — arsip ConsentRecord + audit-log (append-only ditegakkan di service)
@@ -125,6 +125,35 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-15 — Fase 1e: Provisioning (HQ buat sekolah, pairing Box, akun admin, setelan, kelas, kenaikan kelas)
+
+**Yang dikerjakan:** Membangun "otak" untuk menyiapkan sekolah baru di sistem. (1) **HQ buat sekolah** — orang pusat mendaftarkan sekolah (NPSN unik, status awal ONBOARDING). (2) **Pairing Box** — pusat menerbitkan satu kode-pasangan untuk alat Box sekolah; kode mentah hanya muncul SEKALI, yang disimpan di database cuma "sidik jari"-nya (hash + pepper rahasia). (3) **Akun admin sekolah** — pusat menerbitkan akun admin (username `admin`, lalu `admin2` dst.), dengan password sementara yang juga muncul SEKALI; admin wajib menggantinya saat login pertama. (4) **Setelan sekolah** — admin bisa baca/ubah jam masuk, jam WiFi, kuota, dll.; yang dikirim saja yang berubah, sisanya tetap pakai default standar (BAGIAN 10.1). (5) **Kelola kelas** — buat/lihat/ubah/hapus kelas (hapus = diarsipkan, baris tetap ada untuk riwayat; tak bisa dihapus kalau masih ada siswa). (6) **Wizard kenaikan kelas** — mode pratinjau dulu (lihat rencana tanpa mengubah apa pun), lalu konfirmasi: kelas 10→11 dan 11→12 naik (siswa ikut pindah), kelas 12 ditandai "lulus". Ini potongan pertama yang memakai penjaga RBAC 1c di endpoint sungguhan.
+
+**File yang dibuat/diubah:**
+- `apps/api/src/modules/school/school.service.ts` — **(baru)** seluruh logika provisioning & master data.
+- `apps/api/src/modules/school/hq.controller.ts` — **(baru)** endpoint `/hq/schools` (+ `/pair-box`, `/admin-account`), semua scope `global` (hanya HQ).
+- `apps/api/src/modules/school/school.controller.ts` — **(baru)** endpoint `/school/settings` & `/school/classes` (+ `/promote`), scope `school`.
+- `apps/api/src/modules/school/provisioning.ts` — **(baru)** pembuat password sementara & pairing token (hash + pepper).
+- `apps/api/src/modules/school/school.module.ts` — isi modul (dulu stub); impor AuthModule.
+- `apps/api/src/modules/auth/auth.module.ts` — re-export `JwtModule` agar `JwtAuthGuard` bisa dipakai modul lain (memperbaiki error DI saat SchoolModule memakainya).
+- `packages/shared/src/school.ts` — tambah bentuk respons wizard kenaikan kelas (`classPromoteResultSchema`, `classPromotionPlanSchema`) — bentuk respons ini belum dipatok di 1a.
+- `apps/api/src/config/env.ts` + `.env` + `.env.example` + `infra/docker-compose.dev.yml` — tambah `BOX_PAIRING_PEPPER` (wajib sejak 1e, BAGIAN 16).
+- `apps/api/prisma/schema.prisma` + migrasi `20260615123600_device_pairing_token_expiry` — kolom `Device.pairingTokenExpiresAt`.
+- `apps/api/prisma/seed.ts` — tambah user **HQ_OPS demo** (`hq@magnoo.demo`, password sama dgn demo lain) agar endpoint `/hq` bisa diuji.
+- `school.service.test.ts` — **(baru)** 13 tes unit.
+
+**Keputusan kecil yang diambil:** (1) **Kelas 12 saat kenaikan kelas TIDAK diubah jadi alumni** — itu job harian otomatis `graduation-transition` di Fase 7 (BAGIAN 10.9); wizard hanya menandai "lulus" & mengarsipkan kelasnya. *(Disetujui pemilik di awal sesi.)* (2) Pairing token di-hash `sha256(token + BOX_PAIRING_PEPPER)`, berlaku 7 hari. (3) Username admin otomatis `admin`/`admin2`/… unik per sekolah. (4) Setelan disimpan sebagai "override" saja; saat dibaca = default 10.1 + override. (5) Penghapusan kelas = soft-delete & ditolak bila masih ada siswa aktif. (6) Audit dicatat untuk semua aksi provisioning (SCHOOL_CREATE, BOX_PAIR, ADMIN_ACCOUNT_CREATE, SETTINGS_UPDATE, CLASS_* , CLASS_PROMOTE).
+
+**Sudah dibuktikan jalan?** Ya, dua lapis. **Tes unit:** api **49/49** (13 baru), shared 24/24. **Uji langsung ke DB nyata (port 3100):** seluruh alur HQ→sekolah→pair-box→admin→login admin→setelan→kelas→kenaikan kelas (pratinjau & konfirmasi) BERHASIL; tahun ajaran baru berisi kelas 11, kelas lama terarsip. **RBAC nyata:** admin→`/hq` = 403, HQ→`/school` = 403, tanpa token = 401. typecheck/lint/build ✅. Data uji sudah dibersihkan dari DB dev.
+
+**Sudah di-commit?** Ya — `feat(school): provisioning — schools, box pairing, admin accounts, settings, classes, promote (1e)`. *(Belum di-push: firewall blokir TLS ke GitHub — push dari laptop di kantor.)*
+
+**Status:** SELESAI. Push GitHub masih tertunda (firewall) — akan di-push dari laptop di kantor.
+
+**Langkah berikutnya:** Potongan **1f** — Impor XLSX (job BullMQ + validasi per-baris + laporan error + idempotent + penyamaran NIS). Tunggu aba-aba pemilik.
 
 -----
 

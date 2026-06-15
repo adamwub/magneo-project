@@ -51,6 +51,8 @@ services:
       # Dev only — di produksi WAJIB diganti rahasia acak (BAGIAN 14).
       JWT_ACCESS_SECRET: dev-only-access-secret-change-me-32chars-min
       JWT_REFRESH_SECRET: dev-only-refresh-secret-change-me-32chars-min
+      # Fase 1e — pepper hash pairing token Box (BAGIAN 16). Dev only.
+      BOX_PAIRING_PEPPER: dev-only-box-pairing-pepper-change-me
     ports:
       - "3000:3000"
     depends_on:

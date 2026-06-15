@@ -16,6 +16,8 @@ import { JwtAuthGuard } from "./jwt-auth.guard";
   imports: [JwtModule.register({})],
   controllers: [AuthController],
   providers: [AuthService, JwtAuthGuard],
-  exports: [AuthService, JwtAuthGuard],
+  // JwtModule di-re-export agar modul lain (mis. SchoolModule) yang memakai
+  // JwtAuthGuard punya akses ke JwtService di konteksnya sendiri.
+  exports: [AuthService, JwtAuthGuard, JwtModule],
 })
 export class AuthModule {}

@@ -670,6 +670,10 @@ model Device {
   schoolId         String?
   pairedAt         DateTime?
   pairingTokenHash String?
+  // Masa berlaku pairing token sekali-pakai (1e). Token mentah hanya dikirim sekali;
+  // hash + pepper disimpan di pairingTokenHash. Validasi token saat Box menyelesaikan
+  // pairing = Fase 3 — kolom ini menyimpan kapan token kedaluwarsa agar bisa ditegakkan.
+  pairingTokenExpiresAt DateTime?
   swVersion        String?
   lastSeenAt       DateTime?
   health           Json?

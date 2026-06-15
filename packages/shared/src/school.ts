@@ -121,6 +121,37 @@ export const classPromoteRequestSchema = z.object({
 });
 export type ClassPromoteRequest = z.infer<typeof classPromoteRequestSchema>;
 
+/**
+ * Satu baris rencana kenaikan kelas (per kelas asal).
+ * - grade 10/11 → naik ke grade+1: kelas baru dibuat, siswa ikut pindah.
+ * - grade 12 → `graduating=true`: kelas diarsipkan, siswa TIDAK diubah jadi alumni
+ *   (itu job harian `graduation-transition` Fase 7, BAGIAN 10.9).
+ */
+export const classPromotionPlanSchema = z.object({
+  fromClassId: z.string(),
+  fromLabel: z.string(),
+  fromGrade: z.number().int(),
+  toGrade: z.number().int(),
+  graduating: z.boolean(),
+  studentCount: z.number().int().nonnegative(),
+  /** Hanya terisi saat konfirmasi (dryRun=false) & kelas tujuan dibuat. */
+  toClassId: z.string().optional(),
+});
+export type ClassPromotionPlan = z.infer<typeof classPromotionPlanSchema>;
+
+/** Hasil wizard kenaikan kelas (pratinjau maupun konfirmasi). */
+export const classPromoteResultSchema = z.object({
+  dryRun: z.boolean(),
+  fromAcademicYear: z.string(),
+  toAcademicYear: z.string(),
+  plan: z.array(classPromotionPlanSchema),
+  /** Ringkasan: jumlah kelas baru dibuat & siswa lulus (0 saat dryRun). */
+  classesCreated: z.number().int().nonnegative(),
+  studentsPromoted: z.number().int().nonnegative(),
+  studentsGraduating: z.number().int().nonnegative(),
+});
+export type ClassPromoteResult = z.infer<typeof classPromoteResultSchema>;
+
 // ── School: user tunggal (BAGIAN 8.2 POST/PATCH /school/users) ───────────────
 
 /** Catatan: PII siswa dilarang — `displayName/phone/email` hanya untuk role dewasa (ADR-005). */

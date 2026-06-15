@@ -25,6 +25,8 @@ const ID = {
   school: "11111111-1111-4111-8111-111111111111",
   klass: "22222222-2222-4222-8222-222222222222",
   admin: "33333333-3333-4333-8333-333333333333",
+  // HQ_OPS demo (schoolId null) — diperlukan untuk menguji endpoint provisioning /hq (Fase 1e).
+  hq: "99999999-9999-4999-8999-999999999999",
   teacher: ["44444444-4444-4444-8444-444444444441", "44444444-4444-4444-8444-444444444442"],
   student: [
     "55555555-5555-4555-8555-555555555551",
@@ -58,6 +60,22 @@ async function main(): Promise<void> {
       province: "Jawa Timur",
       status: SchoolStatus.ACTIVE,
       settings: SCHOOL_SETTING_DEFAULTS,
+    },
+  });
+
+  // 1b) HQ operator (tanpa sekolah) — untuk uji provisioning /hq (Fase 1e).
+  await prisma.user.upsert({
+    where: { id: ID.hq },
+    update: {},
+    create: {
+      id: ID.hq,
+      role: Role.HQ_OPS,
+      username: "hq@magnoo.demo",
+      passwordHash,
+      status: UserStatus.ACTIVE,
+      displayName: "HQ Operator Demo",
+      email: "hq@magnoo.demo",
+      mustChangePassword: false,
     },
   });
 
