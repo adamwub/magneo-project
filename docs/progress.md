@@ -18,7 +18,8 @@
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
 - **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1: **1a ✅** (skema bersama), **1b ✅** (auth inti), **1c ✅** (RBAC + audit), **1d ✅** (sesi & peran), **1e ✅** (provisioning), **1f ✅** (impor XLSX siswa), **1g ✅** (undangan ortu + OTP + reset password), **1h ✅** (consent & audit-log read). Lihat "RENCANA FASE 1" di bawah. **Semua backend Fase 1 (1a–1h) SELESAI; tersisa tampilan (1i web, 1j mobile) + uji E2E/QA (1k).**
-- **Sedang menuju:** **Potongan 1i** — Web: `/hq` wizard provision + `/school` Pengguna & Kelas. *Menunggu aba-aba pemilik sebelum mulai.* (Catatan: 1i–1j butuh kerja front-end; Tailwind/shadcn ditunda sejak 0e — putuskan saat mulai.)
+- **Sedang menuju:** **Potongan 1i BERJALAN (web).** Dibagi 4 sub-potong: **1i.1 ✅ Fondasi** (Tailwind+shadcn, tema brand, login cookie-httpOnly/BFF, kerangka layout per-peran, logout) — SELESAI & terverifikasi via Playwright. Berikutnya: **1i.2** `/hq` wizard provisioning, **1i.3** `/school` Kelas, **1i.4** `/school` Pengguna (impor + undangan). *Lanjut menunggu aba-aba bila perlu, atau diteruskan.*
+- **QA visual web:** Playwright + Chrome-for-Testing terpasang manual di `/opt/cft/chrome-linux64/chrome` (CDN Playwright keblokir firewall). Pakai `executablePath` itu. Web dev lokal: `API_URL=http://localhost:3100 next start -p 3005` (port 3001 dipakai kontainer web compose lama).
 - **Migrasi DB baru:** `20260616055242_student_import_job_and_nis_key` (tabel `ImportJob` + kolom `School.nisKey` untuk penyamaran NIS per sekolah). Sudah diterapkan ke DB dev. (Sebelumnya: `20260615123600_device_pairing_token_expiry`, `20260614141855_session_prev_refresh_hash`.)
 - **Keputusan NIS sudah DIAMBIL (2026-06-14):** NIS siswa **DISAMARKAN** di cloud (hash berkunci per sekolah jadi `User.username`), NIS mentah TIDAK pernah disimpan di cloud. Detail di "Keputusan Penting" di bawah. *Penerapan transform NIS→samaran masih menyusul di 1f (impor) & disambung ke login; saat ini login siswa mencocokkan `username` apa adanya + butuh `schoolId`.*
 - **Bukti terakhir yang berjalan (1h):** consent & audit diuji **end-to-end ke server+DB nyata** (port 3100, 2 sekolah): grant consent (GENERAL_DATA, evidenceRef tersimpan) ✅; consent aktif ganda tipe sama → **CONFLICT 409** ✅; list + filter subjectUserId/type ✅; **IDOR lintas sekolah → 404** (grant & list) ✅; `GET /school/audit-log` memuat CONSENT_GRANT, **ter-scope** (entri sekolah B tak muncul di A), tanpa before/after, filter action + limit + limit-invalid 400 ✅; **RBAC:** guru → audit-log & grant consent = **403** ✅. Tes unit: api **86/86** (5 baru consent), shared 24/24. typecheck (4 proyek)/lint/build ✅. *(Bukti 1b–1g sebelumnya tetap berlaku.)*
@@ -127,6 +128,36 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-16 — Fase 1i.1: Fondasi dashboard web (Tailwind/shadcn + login cookie + kerangka)
+
+**Yang dikerjakan:** Membangun fondasi dashboard web (Next.js) supaya potongan /hq & /school tinggal diisi. (1) **Tampilan:** pasang Tailwind + komponen shadcn-style (Button/Input/Label/Card) + **tema warna brand Magnoo** (ink/merah/biru/emas/paper, font Plus Jakarta Sans). (2) **Login aman (BFF):** halaman login → dikirim ke "lapisan tipis" server web (route handler) → diteruskan ke backend → token disimpan di **cookie httpOnly** (tak terbaca JavaScript, tahan XSS). Web menempelkan token saat memanggil API; klien tak pernah memegang token mentah. (3) **Kerangka & penjaga:** layout dashboard (sidebar menu + topbar peran + tombol Keluar), middleware yang mengalihkan ke /login bila belum masuk & menyaring akses per-peran (HQ vs sekolah), redirect root ke home sesuai peran. **Keputusan pemilik:** Tailwind+shadcn + cookie httpOnly (dua-duanya opsi aman/rekomendasi). **Pemilik juga minta pasang Playwright** untuk QA visual.
+
+**File yang dibuat/diubah (apps/web):**
+- `tailwind.config.ts`, `postcss.config.mjs`, `app/globals.css` (tema HSL brand), `tsconfig.json` (alias `@/*`).
+- `lib/jwt.ts` (decode JWT pure utk Edge), `lib/session.ts` (getSession server), `lib/api.ts` (apiFetch server menempel Bearer dari cookie), `lib/utils.ts` (cn).
+- `components/ui/{button,input,label,card}.tsx` (shadcn-style), `components/{dashboard-shell,sidebar-nav,logout-button}.tsx`.
+- `app/api/auth/{login,logout}/route.ts` (BFF: set/hapus cookie httpOnly).
+- `middleware.ts` (penjaga /hq & /school + gerbang peran), `app/login/page.tsx`, `app/page.tsx` (redirect), `app/hq/{layout,page}.tsx`, `app/school/{layout,page,kelas/page,pengguna/page}.tsx` (kelas/pengguna = placeholder utk 1i.3–1i.4).
+- `playwright.config.ts`; deps: tailwindcss/postcss/autoprefixer/tailwindcss-animate, class-variance-authority/clsx/tailwind-merge/lucide-react, @radix-ui/react-{slot,label,dialog,dropdown-menu}, @playwright/test.
+
+**Catatan perkakas (penting):** CDN Playwright + mirror-nya **keblokir firewall** server ini → `playwright install` gagal. Solusi: unduh **Chrome-for-Testing** langsung dari Google storage ke `/opt/cft/chrome-linux64/chrome` (+ `playwright install-deps` via apt). Pakai lewat `executablePath`. (Disimpan juga di memory Claude.) `unzip` tak ada → pakai python; WAJIB `chmod +x chrome_crashpad_handler chrome_sandbox`.
+
+**Sudah dibuktikan jalan?** Ya — typecheck/lint/`next build` ✅ (11 route + middleware). **QA visual Playwright (browser nyata, web :3005 → backend :3100, admin uji):** 9 cek lulus — halaman login tampil; akses /school tanpa login → dialihkan ke /login; password salah → pesan error; login benar → masuk /school; sidebar brand + menu Pengguna + topbar "Admin Sekolah" tampil; klik menu → pindah halaman; Keluar → balik /login. Screenshot login & dashboard ditinjau (rapi, sesuai brand). Data uji & server lokal dibersihkan; skrip QA tidak di-commit.
+
+**Sudah di-commit?** Ya — `feat(web): dashboard foundation — tailwind/shadcn theme, httpOnly-cookie auth (BFF), role-gated shell (1i.1)`. *(Belum di-push: firewall GitHub.)*
+
+**Status:** SELESAI (sub-potong 1i.1 dari 4). 
+
+**Utang baru:**
+- Kontainer **web di docker-compose masih build lama** (menempati port 3001) — rebuild compose saat siap demo (`pnpm dev:infra` / rebuild image web).
+- Font **Plus Jakarta Sans belum di-self-host** (sementara fallback ke font sistem) — self-host/`next/font` saat polish (hindari unduh saat build di env terbatas).
+- Login admin pakai **schoolId (UUID) mentah** sebagai "Kode Sekolah" — kurang ramah; tambah lookup NPSN→schoolId saat polish UX.
+- First-login ganti password admin di web belum ada layar khusus (backend tak memblokir; ditambah saat perlu).
+
+**Langkah berikutnya:** **1i.2** — `/hq` wizard provisioning (buat sekolah → pairing Box → akun admin), lalu 1i.3 Kelas, 1i.4 Pengguna.
 
 -----
 
