@@ -22,6 +22,8 @@ import { apiError } from "../../common/api-error";
 import { hashPassword, verifyPassword, checkPasswordPolicy } from "./password";
 import { generateRefreshToken, hashRefreshToken } from "./tokens";
 import { OtpService } from "./otp/otp.service";
+// Util kripto murni (pseudonim NIS) — dipakai bersama impor 1f; disambung ke login siswa.
+import { pseudonymizeNis } from "../school/import/pseudonym";
 
 /** Aturan lockout (BAGIAN 7.2): gagal 5× → kunci 15 menit. */
 const LOCK_THRESHOLD = 5;
@@ -241,10 +243,24 @@ export class AuthService {
 
   private async findLoginUser(dto: LoginRequest): Promise<User | null> {
     if (dto.username) {
-      // Siswa: NIS (username) unik per sekolah → butuh schoolId.
+      // Login via username unik per sekolah → butuh schoolId.
       if (!dto.schoolId) return null;
-      return this.prisma.user.findFirst({
+      // (1) Cocokkan apa adanya: staf sekolah (admin/guru) punya username biasa.
+      const direct = await this.prisma.user.findFirst({
         where: { schoolId: dto.schoolId, username: dto.username, deletedAt: null },
+      });
+      if (direct) return direct;
+      // (2) Siswa mengetik NIS ASLI → samarkan (nisKey sekolah + pepper) lalu cocokkan
+      //     ke `username` tersamar (ADR-005; menyambung transform 1f ke login).
+      const school = await this.prisma.school.findUnique({
+        where: { id: dto.schoolId },
+        select: { nisKey: true },
+      });
+      if (!school?.nisKey) return null;
+      const pepper = this.config.get("NIS_PSEUDONYM_PEPPER", { infer: true });
+      const pseudonym = pseudonymizeNis(dto.username, school.nisKey, pepper);
+      return this.prisma.user.findFirst({
+        where: { schoolId: dto.schoolId, username: pseudonym, role: "STUDENT", deletedAt: null },
       });
     }
     if (dto.phone) {

@@ -17,9 +17,10 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** **FASE 1 HAMPIR TUNTAS.** Fase 0 ✅. Fase 1: **1a–1h ✅** (backend), **1i ✅** (web), **1j ✅** (mobile: login + first-login + onboarding ortu). **Tersisa hanya 1k (uji E2E menyeluruh + gerbang QA-1 & QA-2).**
-- **Sedang menuju:** **Potongan 1k** — Uji E2E menyeluruh + gerbang **QA-1** (auth: lockout, first-login, IDOR) & **QA-2** (impor: campur valid/invalid, idempotent, file besar ditolak). Skenario DoD: HQ buat sekolah → admin impor 500 siswa (ada baris rusak) → siswa login → ortu register & link. *Menunggu aba-aba pemilik.*
-- **Catatan QA visual:** web diuji via Playwright+Chrome; mobile (Flutter) diuji via `flutter analyze` + 5 widget test + `flutter build web` + screenshot login (browser). Server lokal uji: backend `PORT=3100`, web `next start -p 3005`, flutter web `python3 -m http.server 3007` di `build/web`.
+- **Posisi sekarang:** **🎉 FASE 1 TUNTAS (1a–1k ✅).** Fase 0 ✅. Seluruh Fase 1 selesai: backend (1a–1h), web (1i), mobile (1j), uji E2E + gerbang QA-1 & QA-2 (1k). **Berikutnya: FASE 2** (Attendance + Notifikasi + Izin + Pengumuman). Sebelum mulai: baca BAGIAN 10.2–10.4 & 12 (Fase 2). Menunggu aba-aba pemilik.
+- **Sedang menuju:** **FASE 2** — Attendance (QR), Notifikasi (FCM nyata; WA stub), Izin, Pengumuman. Menunggu aba-aba pemilik + persetujuan rencana potongan.
+- **Uji E2E Fase 1:** `pnpm --filter @magnoo/api test:e2e` (`test/e2e/fase1.e2e.ts`) — butuh backend hidup (`PORT=3100`) + Postgres/Redis; OTP dibaca dari log server (`E2E_API_LOG`). 23 cek lulus.
+- **Catatan QA visual:** web diuji via Playwright+Chrome; mobile (Flutter) via `flutter analyze` + 5 widget test + `flutter build web` + screenshot. Server lokal uji: backend `PORT=3100`, web `next start -p 3005`, flutter web `python3 -m http.server 3007` di `build/web`.
 - **QA visual web:** Playwright + Chrome-for-Testing terpasang manual di `/opt/cft/chrome-linux64/chrome` (CDN Playwright keblokir firewall). Pakai `executablePath` itu. Web dev lokal: `API_URL=http://localhost:3100 next start -p 3005` (port 3001 dipakai kontainer web compose lama).
 - **Migrasi DB baru:** `20260616055242_student_import_job_and_nis_key` (tabel `ImportJob` + kolom `School.nisKey` untuk penyamaran NIS per sekolah). Sudah diterapkan ke DB dev. (Sebelumnya: `20260615123600_device_pairing_token_expiry`, `20260614141855_session_prev_refresh_hash`.)
 - **Keputusan NIS sudah DIAMBIL (2026-06-14):** NIS siswa **DISAMARKAN** di cloud (hash berkunci per sekolah jadi `User.username`), NIS mentah TIDAK pernah disimpan di cloud. Detail di "Keputusan Penting" di bawah. *Penerapan transform NIS→samaran masih menyusul di 1f (impor) & disambung ke login; saat ini login siswa mencocokkan `username` apa adanya + butuh `schoolId`.*
@@ -38,7 +39,7 @@
 ## 📋 PETA FASE (centang saat selesai — sumber: aplikasi.md BAGIAN 12)
 
 - [x] **Fase 0** — Pondasi: kerangka monorepo, database, CI/CD
-- [ ] **Fase 1** — Akun & pintu masuk: login semua peran, impor siswa, kode undangan ortu
+- [x] **Fase 1** — Akun & pintu masuk: login semua peran, impor siswa, kode undangan ortu
 - [ ] **Fase 2** — Jantung harian: absen QR, kabar ke ortu, izin, pengumuman
 - [ ] **Fase 3** — Magnoo Box & WiFi (bagian paling berisiko)
 - [ ] **Fase 4** — AI Asisten Guru
@@ -82,7 +83,7 @@
 - [x] **1h** Consent & audit — arsip ConsentRecord + audit-log (append-only ditegakkan di service)
 - [x] **1i** Web — `/hq` wizard provision + `/school` Pengguna & Kelas
 - [x] **1j** Mobile — login + first-login semua peran + OTP ortu & link anak
-- [ ] **1k** Uji E2E + QA — HQ buat sekolah → impor 500 siswa (ada baris rusak) → siswa login → ortu register & link. Gate QA-1 & QA-2
+- [x] **1k** Uji E2E + QA — HQ buat sekolah → impor 500 siswa (ada baris rusak) → siswa login → ortu register & link. Gate QA-1 & QA-2
 
 **DoD Fase 1 (aplikasi.md BAGIAN 12):** skenario E2E di atas jalan; QA-1 (auth: lockout, first-login, IDOR antar scope = 403+audit) & QA-2 (impor: campur valid/invalid, idempotent, 5.000 baris ditolak ramah) lulus.
 
@@ -129,6 +130,28 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-16 — Fase 1k: Uji E2E menyeluruh + gerbang QA-1 & QA-2 — 🎉 FASE 1 TUNTAS
+
+**Yang dikerjakan:** (1) **Menyambung transform NIS→samaran ke login siswa** (utang 1f): di `auth.service.findLoginUser`, login via username kini coba cocokkan apa adanya (staf), lalu — bila tak ketemu — **menyamarkan NIS yang diketik** (nisKey sekolah + pepper) dan cocokkan ke `username` tersamar. Inilah yang membuat "siswa login pakai NIS asli" benar-benar jalan setelah impor. (2) **Uji E2E Fase 1** (`apps/api/test/e2e/fase1.e2e.ts`, skrip ter-commit + script `test:e2e`) yang menjalankan skenario DoD utuh + butir QA-1 & QA-2 terhadap server+DB nyata.
+
+**File yang dibuat/diubah:**
+- `apps/api/src/modules/auth/auth.service.ts` — login siswa via pseudonim NIS (impor `pseudonymizeNis`).
+- `apps/api/test/e2e/fase1.e2e.ts` — **(baru)** uji E2E Fase 1 (23 cek).
+- `apps/api/package.json` — script `test:e2e`.
+
+**Sudah dibuktikan jalan?** Ya — typecheck (4 proyek)/lint ✅; api unit **86/86**; mobile analyze bersih + 5 widget test ✅. **E2E Fase 1: 23 cek LULUS** terhadap server nyata:
+- **DoD:** HQ login → buat sekolah A (ONBOARDING) → pairing Box → akun admin → **admin first-login wajib ganti password** → buat 5 kelas → **impor 500 siswa (5 baris rusak) → COMPLETED, berhasil 500/baru 500/gagal 5** → **siswa login PAKAI NIS ASLI** (pseudonim tersambung) → first-login ganti password → **ortu register→OTP→verify→link anak (ACTIVE)**.
+- **QA-1:** first-login ✅; **lockout → 423** ✅; IDOR/akses: tanpa token 401, siswa→buat kelas 403, HQ→endpoint sekolah 403, **admin A→siswa sekolah B 404** ✅.
+- **QA-2:** campur valid/invalid (500+5) ✅; **idempotent** (impor ulang created 0, tetap 500) ✅; **file >3000 baris → FAILED + pesan ramah** ✅.
+
+**Sudah di-commit?** Ya — `test(api): Fase 1 E2E (DoD + QA-1 + QA-2) + wire student NIS-pseudonym login (1k)`. *(Belum di-push: firewall GitHub.)*
+
+**Status:** SELESAI. **🎉🎉 FASE 1 (Akun & pintu masuk) RESMI TUNTAS** — 11 potongan 1a–1k semua hijau & terbukti. **DoD Fase 1 (BAGIAN 12) terpenuhi.**
+
+**Langkah berikutnya:** **FASE 2** — Attendance (QR dinamis, rule 10.2–10.4) + Notifikasi (FCM nyata, WA stub) + Izin + Pengumuman. Baca BAGIAN 10.2–10.4 dulu; rencanakan potongan; tunggu aba-aba pemilik. **Disarankan: push 13+ commit ke GitHub dari laptop dulu** (backup off-site sebelum mulai fase besar berikutnya).
 
 -----
 
