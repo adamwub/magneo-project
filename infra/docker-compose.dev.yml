@@ -53,6 +53,8 @@ services:
       JWT_REFRESH_SECRET: dev-only-refresh-secret-change-me-32chars-min
       # Fase 1e — pepper hash pairing token Box (BAGIAN 16). Dev only.
       BOX_PAIRING_PEPPER: dev-only-box-pairing-pepper-change-me
+      # Fase 1f — pepper penyamaran NIS (BAGIAN 16). Dev only.
+      NIS_PSEUDONYM_PEPPER: dev-only-nis-pseudonym-pepper-change-me
     ports:
       - "3000:3000"
     depends_on:

@@ -267,6 +267,10 @@ model School {
   timezone  String       @default("Asia/Jakarta")
   status    SchoolStatus
   settings  Json
+  // Kunci penyamaran NIS per sekolah (Fase 1f). Dibuat acak saat impor pertama.
+  // username siswa = HMAC(kunci = sha256(nisKey + NIS_PSEUDONYM_PEPPER), NIS).
+  // Butuh DUA rahasia (kunci di DB + pepper di env); NIS asli tak pernah di cloud (ADR-005).
+  nisKey    String?
   boxes     Device[]
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
@@ -755,4 +759,32 @@ model StartupIdea {
   sponsorCampaignId String?
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
+}
+
+// ============================================================
+// Fase 1f — Impor massal siswa (XLSX)
+// ============================================================
+// Melacak satu pekerjaan impor di latar belakang (BullMQ). Status memakai tipe
+// bersama IMPORT_JOB_STATUSES (@magnoo/shared), disimpan sebagai String — bukan
+// enum DB — sesuai keputusan 1a. errors = ImportRowError[] (dipotong; laporan
+// penuh ada di file CSV unduhan). PII siswa TIDAK disimpan di sini (ADR-005):
+// nama/NIS asli hanya dipakai sesaat saat proses, lalu dibuang.
+model ImportJob {
+  id                      String    @id @default(uuid())
+  schoolId                String
+  createdBy               String // id user admin yang memulai impor
+  status                  String // QUEUED | RUNNING | COMPLETED | FAILED
+  total                   Int       @default(0)
+  processed               Int       @default(0)
+  succeeded               Int       @default(0) // baris valid (dibuat ATAU diperbarui)
+  created                 Int       @default(0) // siswa baru (punya kredensial sekali-unduh)
+  failed                  Int       @default(0)
+  errors                  Json      @default("[]") // ImportRowError[] (dipotong utk tampilan)
+  errorCsv                String? // path file laporan error (CSV), bila ada
+  credentialsCsv          String? // path file kredensial sekali-unduh, bila ada
+  credentialsDownloadedAt DateTime? // diisi saat admin mengunduh; file dihapus setelahnya
+  message                 String? // pesan ramah bila FAILED (mis. file rusak)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  finishedAt              DateTime?
 }

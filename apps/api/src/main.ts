@@ -11,6 +11,9 @@ async function bootstrap(): Promise<void> {
   // Semua endpoint fitur di bawah /api/v1 (BAGIAN 8.1); /health tetap di root utk infra.
   app.setGlobalPrefix(API_PREFIX.replace(/^\//, ""), { exclude: ["health"] });
 
+  // Tutup worker/queue & koneksi Redis rapi saat SIGTERM/SIGINT (Fase 1f).
+  app.enableShutdownHooks();
+
   const config = app.get(ConfigService<Env, true>);
   const port = config.get("PORT", { infer: true });
 

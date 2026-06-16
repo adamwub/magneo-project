@@ -17,15 +17,15 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1: **1a ✅** (skema bersama), **1b ✅** (auth inti), **1c ✅** (RBAC + audit), **1d ✅** (sesi & peran), **1e ✅** (provisioning). Lihat "RENCANA FASE 1" di bawah.
-- **Sedang menuju:** **Potongan 1f** — Impor XLSX: job BullMQ + validasi per-baris + laporan error ramah + idempotent + **penyamaran NIS** (hash berkunci per sekolah). *Menunggu aba-aba pemilik sebelum mulai.* (Pemakai pertama Redis/BullMQ + transform NIS→samaran yang sudah diputuskan.)
-- **Migrasi DB baru:** `20260615123600_device_pairing_token_expiry` (kolom `Device.pairingTokenExpiresAt` untuk masa-berlaku pairing token Box). Sudah diterapkan ke DB dev. (Sebelumnya: `20260614141855_session_prev_refresh_hash`.)
+- **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1: **1a ✅** (skema bersama), **1b ✅** (auth inti), **1c ✅** (RBAC + audit), **1d ✅** (sesi & peran), **1e ✅** (provisioning), **1f ✅** (impor XLSX siswa). Lihat "RENCANA FASE 1" di bawah.
+- **Sedang menuju:** **Potongan 1g** — Undangan ortu: kode undangan + PDF batch (render server), register ortu + OTP (WA = adapter stub/log), verify-otp, link anak. *Menunggu aba-aba pemilik sebelum mulai.*
+- **Migrasi DB baru:** `20260616055242_student_import_job_and_nis_key` (tabel `ImportJob` + kolom `School.nisKey` untuk penyamaran NIS per sekolah). Sudah diterapkan ke DB dev. (Sebelumnya: `20260615123600_device_pairing_token_expiry`, `20260614141855_session_prev_refresh_hash`.)
 - **Keputusan NIS sudah DIAMBIL (2026-06-14):** NIS siswa **DISAMARKAN** di cloud (hash berkunci per sekolah jadi `User.username`), NIS mentah TIDAK pernah disimpan di cloud. Detail di "Keputusan Penting" di bawah. *Penerapan transform NIS→samaran masih menyusul di 1f (impor) & disambung ke login; saat ini login siswa mencocokkan `username` apa adanya + butuh `schoolId`.*
-- **Bukti terakhir yang berjalan (1e):** alur provisioning diuji **terhadap database nyata** (port lokal 3100): HQ login → buat sekolah (status ONBOARDING) ✅ → pair-box (token sekali-tampil, yang tersimpan = hash) ✅ → akun admin (username `admin`, password sementara sekali-tampil, `mustChangePassword`) ✅ → admin login ✅ → GET/PUT setelan (default 10.1 + override hanya field terkirim) ✅ → buat 2 kelas (grade 10 & 12) ✅ → kenaikan kelas: dryRun pratinjau, lalu confirm (kelas 10→11 baru dibuat, kelas 12 ditandai lulus & tidak dibuat kelas, kelas lama diarsipkan) ✅. **RBAC nyata:** admin→`/hq` 403 ✅, HQ→`/school` 403 ✅, tanpa token 401 ✅. Tes unit: api **49/49** (13 baru untuk 1e), shared 24/24. typecheck/lint/build ✅. *(Bukti 1b–1d sebelumnya tetap berlaku.)*
+- **Bukti terakhir yang berjalan (1f):** impor XLSX diuji **end-to-end terhadap server + DB nyata** (port 3100, worker in-process aktif): admin login → unggah file **505 baris (500 valid + 5 rusak)** → job COMPLETED dengan total 505 / succeeded 500 / **created 500** / failed 5 ✅; 5 jenis error tertangkap (NIS kosong/format/ganda-dalam-file, kelas tak ada, nama kosong) ✅; **DB: 500 siswa, username = samaran 64-hex, displayName/phone/email NULL, nol NIS mentah** ✅; `nisKey` sekolah dibuat saat impor pertama ✅; `credentials.csv` (500 baris) sekali-unduh — unduh kedua **404** ✅; `errors.csv` (5 baris) ✅; **idempotensi:** unggah file sama lagi → created **0**, succeeded 500 (di-update), jumlah siswa tetap **500** (tak menggandakan) ✅; audit `IMPORT_COMPLETE` ×2 ✅. Tes unit: api **72/72** (23 baru: pseudonym 6, validasi 11, xlsx 6), shared 24/24. typecheck (4 proyek)/lint/build ✅. *(Bukti 1b–1e sebelumnya tetap berlaku.)*
 - **GitHub:** **belum bisa push** — firewall environment ini memblokir TLS ke `github.com`/`api.github.com` (TCP nyambung, TLS di-drop). Internet umum jalan (cli.github.com & Cloudflare OK). Token & `gh` 2.94 sudah siap. Tindakan: buka firewall (allowlist github.com, api.github.com, codeload.github.com, *.githubusercontent.com:443) ATAU push dari laptop. Backup off-site jadi PR penting — sementara hanya ada satu salinan di server ini.
 - **Catatan infra:** PostgreSQL dev kini lewat **compose resmi** (`infra/docker-compose.dev.yml`), volume bernama `magnoo-postgres-data` → **data persisten**. Nyalakan semua: `pnpm dev:infra` (atau `docker compose -f infra/docker-compose.dev.yml up --build`); matikan: `pnpm dev:infra:down`. API otomatis `prisma migrate deploy` saat start. Kontainer Postgres lama yang berdiri sendiri sudah dihapus (digantikan compose).
 - **Commit terakhir:** lihat `git log --oneline` (1a = `feat(shared): Fase 1 auth & school schemas`).
-- **Tanggal sesi terakhir:** 2026-06-14.
+- **Tanggal sesi terakhir:** 2026-06-16.
 - **Peta lengkap potongan Fase 0:** lihat bagian "🧱 RENCANA FASE 0" di bawah (centang = selesai).
 - **Catatan lingkungan:** perkakas (Git/Node20/pnpm9/Docker) terpasang. **Flutter 3.44.2 terpasang di `/opt/flutter`** — sesi baru WAJIB tambahkan ke PATH: `export PATH="/opt/flutter/bin:$PATH"` (dan `git config --global --add safe.directory /opt/flutter`). Dokumen "manusia" (21 file) tertata di folder `00–05` DI LUAR repo ini; folder coding dijaga bersih.
 
@@ -73,7 +73,7 @@
 - [x] **1c** RBAC — guard `@Roles` + `@Scope`, enforce scope (guru→kelasnya, admin→sekolahnya, siswa→diri, ortu→anak, HQ→global), 403 + AuditLog append-only
 - [x] **1d** Sesi & peran — batas perangkat (siswa 2 / lain 3), refresh reuse-detection→revoke semua, role-switch (linkRoles), list/revoke sesi
 - [x] **1e** Provisioning — HQ buat sekolah, pairing token Box, akun admin (sekali tampil), setting sekolah, CRUD kelas, wizard kenaikan kelas (preview→confirm)
-- [ ] **1f** Impor XLSX — job BullMQ + validasi per-baris + laporan error ramah + idempotent + **penyamaran NIS** (hash berkunci per sekolah)
+- [x] **1f** Impor XLSX — job BullMQ + validasi per-baris + laporan error ramah + idempotent + **penyamaran NIS** (hash berkunci per sekolah)
 - [ ] **1g** Undangan ortu — kode undangan + PDF batch (render server), register ortu + OTP (WA = adapter stub/log), verify-otp, link anak
 - [ ] **1h** Consent & audit — arsip ConsentRecord + audit-log (append-only ditegakkan di service)
 - [ ] **1i** Web — `/hq` wizard provision + `/school` Pengguna & Kelas
@@ -125,6 +125,43 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-16 — Fase 1f: Impor XLSX siswa (antrean + validasi + penyamaran NIS + idempotent)
+
+**⚠️ Catatan jujur di awal:** saat sesi ini mulai, ternyata **sebagian pekerjaan 1f sudah ada di kode tapi BELUM tercatat di sini & BELUM di-commit** (pondasi: library exceljs/bullmq/ioredis, tabel `ImportJob` + kolom `School.nisKey` + migrasi, rangka antrean `queue/`, dan 4 "alat" di `import/`: penyamaran NIS, pembaca XLSX, validasi, penyimpanan file). Sesi sebelumnya tampaknya keburu mulai lalu terputus. Bagian itu berkualitas baik jadi DILANJUTKAN (bukan ditulis ulang); sesi ini menambah "perakitan" + bukti + commit. (Catatan tambahan: file lama itu ternyata belum pernah lolos `typecheck` — ada error versi ioredis & tipe Buffer/`REQUIRED` di xlsx; sudah diperbaiki, lihat bawah.)
+
+**Yang dikerjakan:** Membuat fitur **impor massal siswa dari file Excel (.xlsx)** yang berjalan di latar belakang. Admin sekolah mengunggah file daftar siswa → sistem menaruhnya di antrean → "pekerja" (worker) memprosesnya tanpa membuat admin menunggu: membaca file, **memeriksa tiap baris** (NIS wajib & berupa angka, tidak ganda dalam file, nama wajib, kelas harus sudah ada di sekolah; kolom opsional NISN/JK/Tgl-lahir dicek format), lalu untuk baris yang lolos **membuat akun siswa**. Inti privasi (ADR-005 / guardrail 13.2): **NIS asli TIDAK PERNAH disimpan di cloud** — yang disimpan sebagai `username` siswa adalah NIS yang **disamarkan** (HMAC dengan DUA rahasia: `nisKey` acak per sekolah di DB + `NIS_PSEUDONYM_PEPPER` di env). Karena penyamaran deterministik + ada aturan unik `[schoolId, username]`, impor jadi **idempotent**: file yang sama diunggah dua kali tidak menggandakan siswa (yang kedua hanya meng-update). Hasil impor: **laporan error** yang ramah (CSV) + **kredensial sekali-unduh** (NIS + password sementara siswa baru; admin bagikan, lalu file dihapus). File unggahan (berisi NIS asli) **dihapus** setelah diproses.
+
+**Keputusan pemilik (sesi ini, 2026-06-16):** (1) **Worker jalan satu-proses dengan API** (in-process) — cukup untuk skala awal di server 4GB; dipisah jadi proses sendiri nanti (utang). (2) **Kredensial diserahkan via file CSV sekali-unduh** (admin unduh, file langsung dihapus & ditandai; tak bisa diunduh dua kali).
+
+**File yang dibuat/diubah:**
+- `apps/api/src/modules/school/import/import.service.ts` — **(baru)** otak impor: terima unggahan→buat `ImportJob`→antrekan; `process(jobId)` (baca→validasi→samarkan→upsert siswa→tulis CSV); status; unduh error & kredensial (sekali pakai).
+- `apps/api/src/modules/school/import/import.controller.ts` — **(baru)** endpoint `POST /school/users/import` (multipart, batas 10MB), `GET .../:jobId` (progres), `GET .../:jobId/errors.csv`, `GET .../:jobId/credentials.csv`. Scope `school` + role `SCHOOL_ADMIN`.
+- `apps/api/src/modules/school/import/import.worker.ts` — **(baru)** worker BullMQ in-process (lifecycle Nest: nyala saat start, tutup rapi saat berhenti; koneksi Redis sendiri; concurrency 2).
+- `apps/api/src/modules/school/import/{pseudonym,xlsx,validation,import-storage}.ts` — (dari sesi lalu) dipertahankan; `validation.ts` diperbaiki kecil (tandai NIS pertama yang valid agar duplikat tertangkap); `xlsx.ts` perbaikan tipe (`REQUIRED` & cast Buffer exceljs).
+- `apps/api/src/modules/school/school.module.ts` — daftarkan ImportController/Service/Worker.
+- `packages/shared/src/school.ts` — `importJobStatusSchema` tambah `created`, `message`, `credentialsReportUrl` (bentuk respons; regenerate Dart).
+- `apps/api/package.json` — **kunci `ioredis` ke `5.10.1`** (persis seperti yang dipakai bullmq) agar tidak ada dua salinan ioredis yang bikin tipe koneksi bentrok.
+- Tes baru: `import/{pseudonym,validation,xlsx}.test.ts` (23 tes).
+- (dari sesi lalu, kini ter-commit) migrasi `20260616055242_student_import_job_and_nis_key`, `queue/*`, env `REDIS_URL`/`NIS_PSEUDONYM_PEPPER`/`IMPORT_STORAGE_DIR`, `QueueModule` di app, shutdown hooks di main.
+
+**Keputusan kecil:** (1) Batas **3.000 baris** per file impor; di atas itu ditolak ramah (memenuhi QA-2 "5.000 baris ditolak ramah"). (2) Header XLSX menerima sinonim (Nama/Nama Lengkap, Kelas/Rombel) & tak peka huruf besar/kecil; **dibaca sebagai TEKS** agar NIS dengan nol di depan / angka panjang tidak rusak. (3) Validasi mengumpulkan SEMUA error per baris (bukan berhenti di error pertama). (4) Kredensial CSV memuat NIS asli (perlu agar admin tahu password milik siapa) — bersifat sementara, izin file 0600, dihapus setelah diunduh sekali.
+
+**Sudah dibuktikan jalan?** Ya, dua lapis. **Tes unit:** api **72/72** (23 baru), shared 24/24; typecheck (4 proyek)/lint/build ✅. **Uji end-to-end ke server+DB nyata (port 3100, worker in-process):** unggah 505 baris (500 valid + 5 rusak) → COMPLETED (500 dibuat, 5 gagal dengan 5 jenis error benar); DB berisi 500 siswa ber-username samaran 64-hex, tanpa PII, nol NIS mentah; kredensial sekali-unduh (unduh kedua 404); **idempotensi terbukti** (impor ulang: created 0, jumlah siswa tetap 500); audit tercatat. Data uji & file sementara sudah dibersihkan; skrip uji sementara dihapus (tidak di-commit).
+
+**Sudah di-commit?** Ya — `feat(school): student XLSX import — queue worker, per-row validation, NIS pseudonymization, idempotent (1f)`. *(Belum di-push: firewall blokir TLS ke GitHub — push dari laptop.)*
+
+**Status:** SELESAI.
+
+**Utang baru (dicatat, kerjakan nanti):**
+- Worker impor **in-process** — pisahkan jadi proses/kontainer sendiri saat trafik naik (skala).
+- `credentials.csv` & `errors.csv` disimpan sebagai **file di disk** server (izin 0600); pindah ke object storage + tautan sekali-pakai terenkripsi (rapikan di fase infra/keamanan).
+- Pencocokan kelas via **label** memetakan ke semua kelas non-arsip; bila ada label sama di lintas tahun ajaran bisa ambigu — pertimbangkan menyaring per tahun ajaran aktif saat UI impor dibangun (1i).
+- Hash argon2 per siswa baru dijalankan **berurutan** di worker (500 siswa ≈ puluhan detik) — cukup untuk latar belakang; optimalkan bila perlu.
+
+**Langkah berikutnya:** Potongan **1g** — Undangan ortu (kode undangan + PDF batch, register ortu + OTP, link anak). Tunggu aba-aba pemilik.
 
 -----
 

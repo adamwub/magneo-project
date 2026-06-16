@@ -198,9 +198,15 @@ export const importJobStatusSchema = z.object({
   total: z.number().int().nonnegative(),
   processed: z.number().int().nonnegative(),
   succeeded: z.number().int().nonnegative(),
+  /** Siswa BARU yang dibuat (punya kredensial sekali-unduh); ≤ succeeded. */
+  created: z.number().int().nonnegative(),
   failed: z.number().int().nonnegative(),
   errors: z.array(importRowErrorSchema),
+  /** Pesan ramah saat status FAILED (mis. file rusak / terlalu besar). */
+  message: z.string().optional(),
   errorReportUrl: z.string().optional(),
+  /** URL unduh kredensial sekali-pakai (NIS + password sementara siswa baru). */
+  credentialsReportUrl: z.string().optional(),
 });
 export type ImportJobStatusResponse = z.infer<typeof importJobStatusSchema>;
 

@@ -25,8 +25,17 @@ export const envSchema = z.object({
   // Token mentah hanya dikirim sekali; yang disimpan = hash(token + pepper).
   BOX_PAIRING_PEPPER: z.string().min(16),
 
-  // Disiapkan untuk fase berikut (opsional dulu):
-  REDIS_URL: z.string().url().optional(),
+  // Wajib sejak Fase 1f (impor): backend memakai antrean BullMQ di atas Redis.
+  REDIS_URL: z.string().url(),
+
+  // Wajib sejak Fase 1f: pepper penyamaran NIS (BAGIAN 16). Bersama nisKey per
+  // sekolah (di DB), membentuk kunci HMAC. Butuh KEDUA rahasia untuk menyamarkan
+  // NIS — bila salah satu bocor sendirian, NIS tetap aman (ADR-005).
+  NIS_PSEUDONYM_PEPPER: z.string().min(16),
+
+  // Folder penyimpanan laporan impor (CSV error & kredensial sekali-unduh).
+  // Default = subfolder di direktori temp sistem.
+  IMPORT_STORAGE_DIR: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
