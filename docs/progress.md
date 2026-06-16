@@ -18,7 +18,7 @@
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
 - **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1: **1a ✅** (skema bersama), **1b ✅** (auth inti), **1c ✅** (RBAC + audit), **1d ✅** (sesi & peran), **1e ✅** (provisioning), **1f ✅** (impor XLSX siswa), **1g ✅** (undangan ortu + OTP + reset password), **1h ✅** (consent & audit-log read). Lihat "RENCANA FASE 1" di bawah. **Semua backend Fase 1 (1a–1h) SELESAI; tersisa tampilan (1i web, 1j mobile) + uji E2E/QA (1k).**
-- **Sedang menuju:** **Potongan 1i BERJALAN (web).** 4 sub-potong: **1i.1 ✅ Fondasi**, **1i.2 ✅ `/hq` wizard provisioning** (buat sekolah → pairing Box → akun admin, token/password sekali-tampil) — terverifikasi Playwright. Berikutnya: **1i.3** `/school` Kelas, **1i.4** `/school` Pengguna (impor + undangan).
+- **Sedang menuju:** **Potongan 1i BERJALAN (web).** 4 sub-potong: **1i.1 ✅ Fondasi**, **1i.2 ✅ `/hq` wizard provisioning**, **1i.3 ✅ `/school` Kelas** (CRUD + wizard kenaikan kelas preview→konfirmasi) — terverifikasi Playwright. Berikutnya: **1i.4** `/school` Pengguna (impor XLSX + kode undangan).
 - **QA visual web:** Playwright + Chrome-for-Testing terpasang manual di `/opt/cft/chrome-linux64/chrome` (CDN Playwright keblokir firewall). Pakai `executablePath` itu. Web dev lokal: `API_URL=http://localhost:3100 next start -p 3005` (port 3001 dipakai kontainer web compose lama).
 - **Migrasi DB baru:** `20260616055242_student_import_job_and_nis_key` (tabel `ImportJob` + kolom `School.nisKey` untuk penyamaran NIS per sekolah). Sudah diterapkan ke DB dev. (Sebelumnya: `20260615123600_device_pairing_token_expiry`, `20260614141855_session_prev_refresh_hash`.)
 - **Keputusan NIS sudah DIAMBIL (2026-06-14):** NIS siswa **DISAMARKAN** di cloud (hash berkunci per sekolah jadi `User.username`), NIS mentah TIDAK pernah disimpan di cloud. Detail di "Keputusan Penting" di bawah. *Penerapan transform NIS→samaran masih menyusul di 1f (impor) & disambung ke login; saat ini login siswa mencocokkan `username` apa adanya + butuh `schoolId`.*
@@ -128,6 +128,28 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-16 — Fase 1i.3: Web `/school` Kelas (CRUD + wizard kenaikan kelas)
+
+**Yang dikerjakan:** Halaman **/school/kelas**: tabel kelas (label, tingkat, jurusan, tahun ajaran) + **tambah/ubah/hapus** lewat dialog (hapus = konfirmasi; ditolak ramah bila masih ada siswa) + tombol **"Kenaikan Kelas"** (wizard: isi dari/ke tahun ajaran → **pratinjau** rencana tanpa mengubah apa pun → **konfirmasi**; kelas 10/11 naik + siswa pindah, kelas 12 ditandai lulus & diarsipkan). Memakai endpoint kelas dari 1e (tak ada perubahan backend).
+
+**File yang dibuat/diubah (apps/web):**
+- `app/school/actions.ts` — **(baru)** Server Actions: create/update/delete class + promote (dryRun & confirm).
+- `lib/api.ts` — tambah helper `apiAction`/`ActionResult` (tak-throw, untuk Server Action).
+- `components/school/class-form-dialog.tsx` — **(baru)** form tambah/ubah (dipakai ulang via prop `trigger`).
+- `components/school/class-row-actions.tsx` — **(baru)** ubah + hapus (konfirmasi) per baris.
+- `components/school/promote-wizard.tsx` — **(baru)** wizard kenaikan kelas (pratinjau→konfirmasi).
+- `app/school/kelas/page.tsx` — tabel kelas (server, `apiFetch GET /school/classes`) + tombol.
+
+**Sudah dibuktikan jalan?** Ya — typecheck/lint/`next build` ✅. **QA visual Playwright (admin uji, 2 kelas + 1 siswa seed):** 9 cek lulus — daftar kelas tampil; buat kelas baru → muncul; ubah label → ter-update; hapus (tanpa siswa) → hilang; wizard pratinjau menampilkan "Naik ke kelas 11" (1 siswa) & "Lulus (arsip)" utk kelas 12; konfirmasi → ringkasan "1 siswa naik kelas". Screenshot pratinjau ditinjau (rapi). Data uji & server lokal dibersihkan; skrip QA tak di-commit.
+
+**Sudah di-commit?** Ya — `feat(web): /school classes — CRUD + class-promotion wizard (preview→confirm) (1i.3)`. *(Belum di-push: firewall GitHub.)*
+
+**Status:** SELESAI (sub-potong 1i.3 dari 4).
+
+**Langkah berikutnya:** **1i.4** — `/school` Pengguna (impor XLSX: upload→pantau progres→unduh laporan/kredensial; kode undangan: generate→unduh PDF). Penutup 1i.
 
 -----
 

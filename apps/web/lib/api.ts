@@ -26,3 +26,27 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   }
   return res.json() as Promise<T>;
 }
+
+export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string };
+
+/**
+ * Pemanggil API untuk Server Action: tak pernah throw — kembalikan {ok,...} agar
+ * aman menyeberang batas server→klien. JSON body otomatis bila `json` diberikan.
+ */
+export async function apiAction<T>(
+  path: string,
+  opts: { method?: string; json?: unknown } = {},
+): Promise<ActionResult<T>> {
+  const res = await apiFetch(path, {
+    method: opts.method ?? "POST",
+    ...(opts.json !== undefined
+      ? { headers: { "content-type": "application/json" }, body: JSON.stringify(opts.json) }
+      : {}),
+  });
+  const data: unknown = await res.json().catch(() => null);
+  if (!res.ok) {
+    const msg = (data as { error?: { message?: string } } | null)?.error?.message ?? `Permintaan gagal (${res.status}).`;
+    return { ok: false, error: msg };
+  }
+  return { ok: true, data: data as T };
+}
