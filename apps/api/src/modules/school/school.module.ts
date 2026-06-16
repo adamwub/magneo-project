@@ -8,6 +8,10 @@ import { ImportService } from "./import/import.service";
 import { ImportWorker } from "./import/import.worker";
 import { InviteController } from "./invite/invite.controller";
 import { InviteService } from "./invite/invite.service";
+import { ConsentController } from "./consent/consent.controller";
+import { ConsentService } from "./consent/consent.service";
+import { AuditController } from "./audit/audit.controller";
+import { AuditReadService } from "./audit/audit-read.service";
 
 /**
  * Modul school (ADR-003 modular monolith) — Fase 1e: provisioning HQ, pairing Box,
@@ -19,8 +23,15 @@ import { InviteService } from "./invite/invite.service";
  */
 @Module({
   imports: [AuthModule],
-  controllers: [HqController, SchoolController, ImportController, InviteController],
-  providers: [SchoolService, ImportService, ImportWorker, InviteService],
+  controllers: [
+    HqController,
+    SchoolController,
+    ImportController,
+    InviteController,
+    ConsentController,
+    AuditController,
+  ],
+  providers: [SchoolService, ImportService, ImportWorker, InviteService, ConsentService, AuditReadService],
   exports: [SchoolService],
 })
 export class SchoolModule {}

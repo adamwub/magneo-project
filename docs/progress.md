@@ -17,11 +17,12 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1: **1a ✅** (skema bersama), **1b ✅** (auth inti), **1c ✅** (RBAC + audit), **1d ✅** (sesi & peran), **1e ✅** (provisioning), **1f ✅** (impor XLSX siswa), **1g ✅** (undangan ortu + OTP + reset password). Lihat "RENCANA FASE 1" di bawah.
-- **Sedang menuju:** **Potongan 1h** — Consent & audit: arsip ConsentRecord + audit-log (append-only ditegakkan di service). *Menunggu aba-aba pemilik sebelum mulai.*
+- **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1: **1a ✅** (skema bersama), **1b ✅** (auth inti), **1c ✅** (RBAC + audit), **1d ✅** (sesi & peran), **1e ✅** (provisioning), **1f ✅** (impor XLSX siswa), **1g ✅** (undangan ortu + OTP + reset password), **1h ✅** (consent & audit-log read). Lihat "RENCANA FASE 1" di bawah. **Semua backend Fase 1 (1a–1h) SELESAI; tersisa tampilan (1i web, 1j mobile) + uji E2E/QA (1k).**
+- **Sedang menuju:** **Potongan 1i** — Web: `/hq` wizard provision + `/school` Pengguna & Kelas. *Menunggu aba-aba pemilik sebelum mulai.* (Catatan: 1i–1j butuh kerja front-end; Tailwind/shadcn ditunda sejak 0e — putuskan saat mulai.)
 - **Migrasi DB baru:** `20260616055242_student_import_job_and_nis_key` (tabel `ImportJob` + kolom `School.nisKey` untuk penyamaran NIS per sekolah). Sudah diterapkan ke DB dev. (Sebelumnya: `20260615123600_device_pairing_token_expiry`, `20260614141855_session_prev_refresh_hash`.)
 - **Keputusan NIS sudah DIAMBIL (2026-06-14):** NIS siswa **DISAMARKAN** di cloud (hash berkunci per sekolah jadi `User.username`), NIS mentah TIDAK pernah disimpan di cloud. Detail di "Keputusan Penting" di bawah. *Penerapan transform NIS→samaran masih menyusul di 1f (impor) & disambung ke login; saat ini login siswa mencocokkan `username` apa adanya + butuh `schoolId`.*
-- **Bukti terakhir yang berjalan (1g):** alur undangan ortu diuji **end-to-end ke server+DB nyata** (port 3100): admin generate kode utk 1 kelas → **3 kode** + **PDF batch (dengan QR)** ✅; ortu register → OTP (diambil dari log stub) → verify → **temp token** ✅; link anak #1 (temp token) → akun ortu dibuat (role PARENT, phone, schoolId anak) + ParentLink ACTIVE + kode ditandai terpakai ✅; kode dipakai-ulang → **INVITE_CODE_USED** ✅; ortu set password via **forgot→OTP→reset** → login phone+password (role PARENT) ✅; link anak #2 (token penuh) → tertaut 2 anak ✅; sudah-tertaut → **PARENT_ALREADY_LINKED (409)**, revoked/expired/invalid → ditolak benar ✅; audit INVITE_GENERATE & PARENT_LINK_CHILD tercatat ✅. Tes unit: api **81/81** (9 baru: OTP 7, PDF 2), shared 24/24. typecheck (4 proyek)/lint/build ✅. *(Bukti 1b–1f sebelumnya tetap berlaku.)*
+- **Bukti terakhir yang berjalan (1h):** consent & audit diuji **end-to-end ke server+DB nyata** (port 3100, 2 sekolah): grant consent (GENERAL_DATA, evidenceRef tersimpan) ✅; consent aktif ganda tipe sama → **CONFLICT 409** ✅; list + filter subjectUserId/type ✅; **IDOR lintas sekolah → 404** (grant & list) ✅; `GET /school/audit-log` memuat CONSENT_GRANT, **ter-scope** (entri sekolah B tak muncul di A), tanpa before/after, filter action + limit + limit-invalid 400 ✅; **RBAC:** guru → audit-log & grant consent = **403** ✅. Tes unit: api **86/86** (5 baru consent), shared 24/24. typecheck (4 proyek)/lint/build ✅. *(Bukti 1b–1g sebelumnya tetap berlaku.)*
+- **Bukti 1g yang berjalan:** alur undangan ortu diuji **end-to-end ke server+DB nyata** (port 3100): admin generate kode utk 1 kelas → **3 kode** + **PDF batch (dengan QR)** ✅; ortu register → OTP (diambil dari log stub) → verify → **temp token** ✅; link anak #1 (temp token) → akun ortu dibuat (role PARENT, phone, schoolId anak) + ParentLink ACTIVE + kode ditandai terpakai ✅; kode dipakai-ulang → **INVITE_CODE_USED** ✅; ortu set password via **forgot→OTP→reset** → login phone+password (role PARENT) ✅; link anak #2 (token penuh) → tertaut 2 anak ✅; sudah-tertaut → **PARENT_ALREADY_LINKED (409)**, revoked/expired/invalid → ditolak benar ✅; audit INVITE_GENERATE & PARENT_LINK_CHILD tercatat ✅. Tes unit: api **81/81** (9 baru: OTP 7, PDF 2), shared 24/24. typecheck (4 proyek)/lint/build ✅. *(Bukti 1b–1f sebelumnya tetap berlaku.)*
 - **Bukti 1f yang berjalan:** impor XLSX diuji **end-to-end terhadap server + DB nyata** (port 3100, worker in-process aktif): admin login → unggah file **505 baris (500 valid + 5 rusak)** → job COMPLETED dengan total 505 / succeeded 500 / **created 500** / failed 5 ✅; 5 jenis error tertangkap (NIS kosong/format/ganda-dalam-file, kelas tak ada, nama kosong) ✅; **DB: 500 siswa, username = samaran 64-hex, displayName/phone/email NULL, nol NIS mentah** ✅; `nisKey` sekolah dibuat saat impor pertama ✅; `credentials.csv` (500 baris) sekali-unduh — unduh kedua **404** ✅; `errors.csv` (5 baris) ✅; **idempotensi:** unggah file sama lagi → created **0**, succeeded 500 (di-update), jumlah siswa tetap **500** (tak menggandakan) ✅; audit `IMPORT_COMPLETE` ×2 ✅. Tes unit: api **72/72** (23 baru: pseudonym 6, validasi 11, xlsx 6), shared 24/24. typecheck (4 proyek)/lint/build ✅. *(Bukti 1b–1e sebelumnya tetap berlaku.)*
 - **GitHub:** **belum bisa push** — firewall environment ini memblokir TLS ke `github.com`/`api.github.com` (TCP nyambung, TLS di-drop). Internet umum jalan (cli.github.com & Cloudflare OK). Token & `gh` 2.94 sudah siap. Tindakan: buka firewall (allowlist github.com, api.github.com, codeload.github.com, *.githubusercontent.com:443) ATAU push dari laptop. Backup off-site jadi PR penting — sementara hanya ada satu salinan di server ini.
 - **Catatan infra:** PostgreSQL dev kini lewat **compose resmi** (`infra/docker-compose.dev.yml`), volume bernama `magnoo-postgres-data` → **data persisten**. Nyalakan semua: `pnpm dev:infra` (atau `docker compose -f infra/docker-compose.dev.yml up --build`); matikan: `pnpm dev:infra:down`. API otomatis `prisma migrate deploy` saat start. Kontainer Postgres lama yang berdiri sendiri sudah dihapus (digantikan compose).
@@ -76,7 +77,7 @@
 - [x] **1e** Provisioning — HQ buat sekolah, pairing token Box, akun admin (sekali tampil), setting sekolah, CRUD kelas, wizard kenaikan kelas (preview→confirm)
 - [x] **1f** Impor XLSX — job BullMQ + validasi per-baris + laporan error ramah + idempotent + **penyamaran NIS** (hash berkunci per sekolah)
 - [x] **1g** Undangan ortu — kode undangan + PDF batch (render server), register ortu + OTP (WA = adapter stub/log), verify-otp, link anak
-- [ ] **1h** Consent & audit — arsip ConsentRecord + audit-log (append-only ditegakkan di service)
+- [x] **1h** Consent & audit — arsip ConsentRecord + audit-log (append-only ditegakkan di service)
 - [ ] **1i** Web — `/hq` wizard provision + `/school` Pengguna & Kelas
 - [ ] **1j** Mobile — login + first-login semua peran + OTP ortu & link anak
 - [ ] **1k** Uji E2E + QA — HQ buat sekolah → impor 500 siswa (ada baris rusak) → siswa login → ortu register & link. Gate QA-1 & QA-2
@@ -126,6 +127,36 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-16 — Fase 1h: Consent & Audit-log (arsip persetujuan + baca audit ter-scope)
+
+**Yang dikerjakan:** (1) **Arsip persetujuan (consent):** sekolah bisa mencatat persetujuan per siswa (jenis: GENERAL_DATA / FACE / PUBLICATION / ALUMNI_CAREER / TOS) beserta versi dokumen, siapa yang memberi (ortu), dan nomor arsip formulir fisik (`evidenceRef`). Bisa mencatat (`POST`) dan melihat daftar (`GET`, bisa difilter per siswa/jenis). Semua dikunci ke sekolah pemanggil — admin tak bisa menyentuh siswa sekolah lain. (2) **Baca audit log:** admin bisa melihat jejak audit sekolahnya (`GET /school/audit-log`) dengan pagination + filter aksi/entitas. Daftar audit hanya menampilkan metadata (siapa, aksi, kapan) — **tanpa** isi `before/after` yang bisa sensitif.
+
+**Penegakan append-only (melunasi utang 0d untuk AuditLog):** penulis audit (`AuditService`, dibuat 1c) memang **hanya punya `write()`** — tak ada update/delete. Di 1h saya tambah jalur **baca terpisah** (`AuditReadService`, hanya `findMany`) supaya sifat tak-bisa-diubah itu tetap terjaga (penulisan & pembacaan dipisah). Guardrail 13.9 (AuditLog append-only) terpenuhi di lapisan service.
+
+**Keputusan pemilik (sesi ini):** **Cabut consent (revoke) DITUNDA ke Fase 6** — di 1h hanya grant + list. Pencabutan + pemicu hapus template wajah di Box dibangun bareng alur wajah (job `face-consent-revocation`, BAGIAN 10.10).
+
+**File yang dibuat/diubah:**
+- `apps/api/src/modules/school/consent/consent.service.ts` + `consent.controller.ts` — **(baru)** grant + list, di-scope ke siswa sekolah (cegah IDOR), tolak consent aktif ganda, audit `CONSENT_GRANT`.
+- `apps/api/src/modules/school/audit/audit-read.service.ts` + `audit.controller.ts` — **(baru)** `GET /school/audit-log` (pagination cursor, filter action/entity), ter-scope ke aksi user sekolah.
+- `apps/api/src/modules/school/school.module.ts` — daftarkan ConsentController/Service & AuditController/AuditReadService.
+- Tes baru: `consent/consent.service.test.ts` (5, pakai Prisma tiruan).
+
+**Keputusan kecil:** (1) Scope consent/audit ke sekolah lewat relasi siswa/user→`schoolId` (model `AuditLog`/`ConsentRecord` memang tak punya kolom `schoolId` sesuai spec BAGIAN 6) — cukup untuk skala Fase 1. (2) Daftar audit memakai cursor pagination (`orderBy createdAt desc, id desc`), default 50/maks 100. (3) `GET /school/consents` boleh SCHOOL_ADMIN & PRINCIPAL (lihat); `POST` hanya SCHOOL_ADMIN. (4) Grant menolak bila sudah ada consent aktif jenis sama (cabut dulu untuk ganti — revoke di Fase 6).
+
+**Sudah dibuktikan jalan?** Ya, dua lapis. **Tes unit:** api **86/86** (5 baru); typecheck (4 proyek)/lint/build ✅. **Uji E2E ke server+DB nyata (port 3100, 2 sekolah):** 16 cek lulus — grant + list + filter, consent-ganda 409, **IDOR lintas sekolah 404**, audit-log ter-scope (entri sekolah lain tak bocor) + tanpa before/after + filter/limit + limit-invalid 400, **RBAC guru 403**. Data uji & skrip uji dibersihkan (tidak di-commit).
+
+**Sudah di-commit?** Ya — `feat(school): consent archive + scoped audit-log read, append-only enforced (1h)`. *(Belum di-push: firewall blokir TLS ke GitHub — push dari laptop.)*
+
+**Status:** SELESAI. **🎉 Seluruh BACKEND Fase 1 (1a–1h) TUNTAS.**
+
+**Utang baru (dicatat, kerjakan nanti):**
+- Scope consent/audit memakai daftar id user/siswa sekolah (query 2-langkah). Bila ingin lebih hemat di skala besar, tambah kolom `schoolId` di `AuditLog`/`ConsentRecord` + indeks (perubahan aditif + migrasi) — pertimbangkan saat data membesar.
+- Cabut consent (revoke) + pemicu hapus template Box = Fase 6 (sudah diputuskan).
+
+**Langkah berikutnya:** Potongan **1i** — Web `/hq` wizard provision + `/school` Pengguna & Kelas (mulai kerja front-end; putuskan Tailwind/shadcn yang ditunda sejak 0e). Tunggu aba-aba pemilik.
 
 -----
 
