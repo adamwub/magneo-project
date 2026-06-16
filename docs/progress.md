@@ -17,8 +17,8 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1: **1a ✅** (skema bersama), **1b ✅** (auth inti), **1c ✅** (RBAC + audit), **1d ✅** (sesi & peran), **1e ✅** (provisioning), **1f ✅** (impor XLSX siswa), **1g ✅** (undangan ortu + OTP + reset password), **1h ✅** (consent & audit-log read). Lihat "RENCANA FASE 1" di bawah. **Semua backend Fase 1 (1a–1h) SELESAI; tersisa tampilan (1i web, 1j mobile) + uji E2E/QA (1k).**
-- **Sedang menuju:** **Potongan 1i BERJALAN (web).** 4 sub-potong: **1i.1 ✅ Fondasi**, **1i.2 ✅ `/hq` wizard provisioning**, **1i.3 ✅ `/school` Kelas** (CRUD + wizard kenaikan kelas preview→konfirmasi) — terverifikasi Playwright. Berikutnya: **1i.4** `/school` Pengguna (impor XLSX + kode undangan).
+- **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1: **1a–1h ✅** (semua backend), **1i ✅** (web `/hq` + `/school`). Lihat "RENCANA FASE 1" di bawah. **Tersisa: 1j (mobile) + 1k (uji E2E/QA gate).**
+- **Sedang menuju:** **Potongan 1j** — Mobile (Flutter): login semua peran + first-login + OTP ortu & link anak. *Menunggu aba-aba pemilik.* (1i web SELESAI: 1i.1 fondasi, 1i.2 /hq wizard, 1i.3 /school kelas, 1i.4 /school pengguna — semua terverifikasi Playwright.)
 - **QA visual web:** Playwright + Chrome-for-Testing terpasang manual di `/opt/cft/chrome-linux64/chrome` (CDN Playwright keblokir firewall). Pakai `executablePath` itu. Web dev lokal: `API_URL=http://localhost:3100 next start -p 3005` (port 3001 dipakai kontainer web compose lama).
 - **Migrasi DB baru:** `20260616055242_student_import_job_and_nis_key` (tabel `ImportJob` + kolom `School.nisKey` untuk penyamaran NIS per sekolah). Sudah diterapkan ke DB dev. (Sebelumnya: `20260615123600_device_pairing_token_expiry`, `20260614141855_session_prev_refresh_hash`.)
 - **Keputusan NIS sudah DIAMBIL (2026-06-14):** NIS siswa **DISAMARKAN** di cloud (hash berkunci per sekolah jadi `User.username`), NIS mentah TIDAK pernah disimpan di cloud. Detail di "Keputusan Penting" di bawah. *Penerapan transform NIS→samaran masih menyusul di 1f (impor) & disambung ke login; saat ini login siswa mencocokkan `username` apa adanya + butuh `schoolId`.*
@@ -79,7 +79,7 @@
 - [x] **1f** Impor XLSX — job BullMQ + validasi per-baris + laporan error ramah + idempotent + **penyamaran NIS** (hash berkunci per sekolah)
 - [x] **1g** Undangan ortu — kode undangan + PDF batch (render server), register ortu + OTP (WA = adapter stub/log), verify-otp, link anak
 - [x] **1h** Consent & audit — arsip ConsentRecord + audit-log (append-only ditegakkan di service)
-- [ ] **1i** Web — `/hq` wizard provision + `/school` Pengguna & Kelas
+- [x] **1i** Web — `/hq` wizard provision + `/school` Pengguna & Kelas
 - [ ] **1j** Mobile — login + first-login semua peran + OTP ortu & link anak
 - [ ] **1k** Uji E2E + QA — HQ buat sekolah → impor 500 siswa (ada baris rusak) → siswa login → ortu register & link. Gate QA-1 & QA-2
 
@@ -128,6 +128,30 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-16 — Fase 1i.4: Web `/school` Pengguna (impor XLSX + kode undangan) — PENUTUP 1i
+
+**Yang dikerjakan:** Halaman **/school/pengguna** dengan dua panel. (1) **Impor Siswa (XLSX):** unggah file → progress bar real-time (status, total, berhasil, baru, gagal) dengan polling job → tombol **unduh laporan error** & **unduh kredensial sekali-pakai** (NIS + password sementara). (2) **Kode Undangan Ortu:** pilih kelas → generate kode → **unduh PDF kartu (berisi QR)**. Memakai endpoint impor (1f) & undangan (1g) — tak ada perubahan backend.
+
+**File yang dibuat/diubah (apps/web):**
+- `app/school/actions.ts` — tambah `startImportAction` (teruskan multipart ke backend), `importStatusAction` (polling), `generateInvitesAction`.
+- `app/api/school/import/[jobId]/[file]/route.ts` — **(baru)** proxy unduh BFF errors.csv/credentials.csv (token via cookie).
+- `app/api/school/invite/[batchId]/route.ts` — **(baru)** proxy unduh BFF PDF undangan.
+- `components/school/import-panel.tsx` — **(baru)** upload + progress + unduhan.
+- `components/school/invite-panel.tsx` — **(baru)** pilih kelas + generate + unduh PDF.
+- `app/school/pengguna/page.tsx` — muat daftar kelas (server) + render dua panel.
+
+**Keputusan kecil:** unduhan file (CSV/PDF) lewat **route handler BFF** yang men-proxy ke backend dengan token cookie (klien tak pernah pegang token); polling status impor tiap 1,5 dtk via Server Action.
+
+**Sudah dibuktikan jalan?** Ya — typecheck/lint/`next build` ✅. **QA visual Playwright (admin uji, kelas X-IPA-1; file XLSX 4 baris = 3 valid + 1 rusak):** 10 cek lulus — dua panel tampil; impor → **COMPLETED, Berhasil 3, Gagal 1**; tombol unduh error & kredensial tampil; **kredensial.csv benar-benar terunduh** (CSV, 3 baris NIS) via BFF; generate kode undangan → "X kode dibuat"; **PDF undangan benar-benar terunduh** (`%PDF`) via BFF. Screenshot ditinjau (rapi, progress bar penuh). Data uji & server lokal dibersihkan; skrip QA tak di-commit.
+
+**Sudah di-commit?** Ya — `feat(web): /school users — XLSX import (progress+downloads) & parent invite codes (PDF) (1i.4)`. *(Belum di-push: firewall GitHub.)*
+
+**Status:** SELESAI. **🎉 Potongan 1i (dashboard web) TUNTAS** — `/hq` provisioning + `/school` Kelas & Pengguna, semua terverifikasi di browser nyata via Playwright.
+
+**Langkah berikutnya:** **1j** — Mobile (Flutter): login semua peran + first-login + OTP ortu & link anak.
 
 -----
 

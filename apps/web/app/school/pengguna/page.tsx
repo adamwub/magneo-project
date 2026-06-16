@@ -1,19 +1,26 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Class } from "@magnoo/shared";
+import { apiFetch } from "@/lib/api";
+import { ImportPanel } from "@/components/school/import-panel";
+import { InvitePanel } from "@/components/school/invite-panel";
 
 export const dynamic = "force-dynamic";
 
-export default function PenggunaPage() {
+async function getClasses(): Promise<Class[]> {
+  const res = await apiFetch("/school/classes");
+  if (!res.ok) return [];
+  return (await res.json()) as Class[];
+}
+
+export default async function PenggunaPage() {
+  const classes = await getClasses();
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Pengguna</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>Segera</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          Impor siswa (XLSX) & kode undangan ortu — dibangun pada potongan 1i.4.
-        </CardContent>
-      </Card>
+      <div>
+        <h1 className="text-2xl font-bold">Pengguna</h1>
+        <p className="text-muted-foreground">Impor siswa & kelola kode undangan orang tua.</p>
+      </div>
+      <ImportPanel />
+      <InvitePanel classes={classes.map((c) => ({ id: c.id, label: c.label }))} />
     </div>
   );
 }
