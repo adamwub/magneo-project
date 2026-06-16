@@ -18,7 +18,7 @@
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
 - **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1: **1a ✅** (skema bersama), **1b ✅** (auth inti), **1c ✅** (RBAC + audit), **1d ✅** (sesi & peran), **1e ✅** (provisioning), **1f ✅** (impor XLSX siswa), **1g ✅** (undangan ortu + OTP + reset password), **1h ✅** (consent & audit-log read). Lihat "RENCANA FASE 1" di bawah. **Semua backend Fase 1 (1a–1h) SELESAI; tersisa tampilan (1i web, 1j mobile) + uji E2E/QA (1k).**
-- **Sedang menuju:** **Potongan 1i BERJALAN (web).** Dibagi 4 sub-potong: **1i.1 ✅ Fondasi** (Tailwind+shadcn, tema brand, login cookie-httpOnly/BFF, kerangka layout per-peran, logout) — SELESAI & terverifikasi via Playwright. Berikutnya: **1i.2** `/hq` wizard provisioning, **1i.3** `/school` Kelas, **1i.4** `/school` Pengguna (impor + undangan). *Lanjut menunggu aba-aba bila perlu, atau diteruskan.*
+- **Sedang menuju:** **Potongan 1i BERJALAN (web).** 4 sub-potong: **1i.1 ✅ Fondasi**, **1i.2 ✅ `/hq` wizard provisioning** (buat sekolah → pairing Box → akun admin, token/password sekali-tampil) — terverifikasi Playwright. Berikutnya: **1i.3** `/school` Kelas, **1i.4** `/school` Pengguna (impor + undangan).
 - **QA visual web:** Playwright + Chrome-for-Testing terpasang manual di `/opt/cft/chrome-linux64/chrome` (CDN Playwright keblokir firewall). Pakai `executablePath` itu. Web dev lokal: `API_URL=http://localhost:3100 next start -p 3005` (port 3001 dipakai kontainer web compose lama).
 - **Migrasi DB baru:** `20260616055242_student_import_job_and_nis_key` (tabel `ImportJob` + kolom `School.nisKey` untuk penyamaran NIS per sekolah). Sudah diterapkan ke DB dev. (Sebelumnya: `20260615123600_device_pairing_token_expiry`, `20260614141855_session_prev_refresh_hash`.)
 - **Keputusan NIS sudah DIAMBIL (2026-06-14):** NIS siswa **DISAMARKAN** di cloud (hash berkunci per sekolah jadi `User.username`), NIS mentah TIDAK pernah disimpan di cloud. Detail di "Keputusan Penting" di bawah. *Penerapan transform NIS→samaran masih menyusul di 1f (impor) & disambung ke login; saat ini login siswa mencocokkan `username` apa adanya + butuh `schoolId`.*
@@ -128,6 +128,28 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-16 — Fase 1i.2: Web `/hq` wizard provisioning sekolah
+
+**Yang dikerjakan:** Halaman **/hq** untuk pusat: tabel daftar sekolah (NPSN, nama, kota, status berwarna) + tombol **"Sekolah Baru"** yang membuka **wizard 3 langkah**: (1) isi data sekolah → buat (status ONBOARDING), (2) masukkan serial Box → terbitkan **token pairing** (tampil SEKALI + tombol salin), (3) terbitkan **akun admin** (username + password sementara, tampil SEKALI + salin). Selesai → tabel ter-refresh menampilkan sekolah baru. Memakai endpoint HQ dari 1e (tak ada perubahan backend).
+
+**File yang dibuat/diubah (apps/web):**
+- `app/hq/actions.ts` — **(baru)** Server Actions (BFF): `createSchoolAction`, `pairBoxAction`, `createAdminAccountAction` (panggil backend via cookie httpOnly; `revalidatePath` setelah akun admin).
+- `components/hq/new-school-wizard.tsx` — **(baru)** wizard dialog 3 langkah + field salin kredensial sekali-tampil.
+- `components/ui/dialog.tsx` — **(baru)** komponen Dialog (Radix, shadcn-style).
+- `app/hq/page.tsx` — daftar sekolah (server component, `apiFetch GET /hq/schools`) + tombol wizard.
+
+**Keputusan kecil:** pakai **Next Server Actions** (bukan banyak route handler) untuk mutasi — lebih ringkas, token tetap di server. Kredensial sekali-tampil ditegaskan di UI (label "sekali tampil" + tombol salin).
+
+**Sudah dibuktikan jalan?** Ya — typecheck/lint/`next build` ✅. **QA visual Playwright (browser nyata, user HQ uji):** 8 cek lulus — login HQ (email, tanpa schoolId) → /hq; tabel & judul tampil; wizard langkah 1→2→3; token pairing tampil; kredensial admin tampil; **sekolah baru muncul di tabel dengan status ONBOARDING**. Screenshot tiap langkah ditinjau (dialog rapi, sesuai brand). Data uji & server lokal dibersihkan; skrip QA tak di-commit.
+
+**Sudah di-commit?** Ya — `feat(web): /hq provisioning wizard (create school → pair box → admin account) (1i.2)`. *(Belum di-push: firewall GitHub.)*
+
+**Status:** SELESAI (sub-potong 1i.2 dari 4).
+
+**Langkah berikutnya:** **1i.3** — `/school` Kelas (tabel + tambah/ubah/hapus + wizard kenaikan kelas preview→konfirmasi).
 
 -----
 
