@@ -17,8 +17,9 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1: **1a–1h ✅** (semua backend), **1i ✅** (web `/hq` + `/school`). Lihat "RENCANA FASE 1" di bawah. **Tersisa: 1j (mobile) + 1k (uji E2E/QA gate).**
-- **Sedang menuju:** **Potongan 1j** — Mobile (Flutter): login semua peran + first-login + OTP ortu & link anak. *Menunggu aba-aba pemilik.* (1i web SELESAI: 1i.1 fondasi, 1i.2 /hq wizard, 1i.3 /school kelas, 1i.4 /school pengguna — semua terverifikasi Playwright.)
+- **Posisi sekarang:** **FASE 1 HAMPIR TUNTAS.** Fase 0 ✅. Fase 1: **1a–1h ✅** (backend), **1i ✅** (web), **1j ✅** (mobile: login + first-login + onboarding ortu). **Tersisa hanya 1k (uji E2E menyeluruh + gerbang QA-1 & QA-2).**
+- **Sedang menuju:** **Potongan 1k** — Uji E2E menyeluruh + gerbang **QA-1** (auth: lockout, first-login, IDOR) & **QA-2** (impor: campur valid/invalid, idempotent, file besar ditolak). Skenario DoD: HQ buat sekolah → admin impor 500 siswa (ada baris rusak) → siswa login → ortu register & link. *Menunggu aba-aba pemilik.*
+- **Catatan QA visual:** web diuji via Playwright+Chrome; mobile (Flutter) diuji via `flutter analyze` + 5 widget test + `flutter build web` + screenshot login (browser). Server lokal uji: backend `PORT=3100`, web `next start -p 3005`, flutter web `python3 -m http.server 3007` di `build/web`.
 - **QA visual web:** Playwright + Chrome-for-Testing terpasang manual di `/opt/cft/chrome-linux64/chrome` (CDN Playwright keblokir firewall). Pakai `executablePath` itu. Web dev lokal: `API_URL=http://localhost:3100 next start -p 3005` (port 3001 dipakai kontainer web compose lama).
 - **Migrasi DB baru:** `20260616055242_student_import_job_and_nis_key` (tabel `ImportJob` + kolom `School.nisKey` untuk penyamaran NIS per sekolah). Sudah diterapkan ke DB dev. (Sebelumnya: `20260615123600_device_pairing_token_expiry`, `20260614141855_session_prev_refresh_hash`.)
 - **Keputusan NIS sudah DIAMBIL (2026-06-14):** NIS siswa **DISAMARKAN** di cloud (hash berkunci per sekolah jadi `User.username`), NIS mentah TIDAK pernah disimpan di cloud. Detail di "Keputusan Penting" di bawah. *Penerapan transform NIS→samaran masih menyusul di 1f (impor) & disambung ke login; saat ini login siswa mencocokkan `username` apa adanya + butuh `schoolId`.*
@@ -80,7 +81,7 @@
 - [x] **1g** Undangan ortu — kode undangan + PDF batch (render server), register ortu + OTP (WA = adapter stub/log), verify-otp, link anak
 - [x] **1h** Consent & audit — arsip ConsentRecord + audit-log (append-only ditegakkan di service)
 - [x] **1i** Web — `/hq` wizard provision + `/school` Pengguna & Kelas
-- [ ] **1j** Mobile — login + first-login semua peran + OTP ortu & link anak
+- [x] **1j** Mobile — login + first-login semua peran + OTP ortu & link anak
 - [ ] **1k** Uji E2E + QA — HQ buat sekolah → impor 500 siswa (ada baris rusak) → siswa login → ortu register & link. Gate QA-1 & QA-2
 
 **DoD Fase 1 (aplikasi.md BAGIAN 12):** skenario E2E di atas jalan; QA-1 (auth: lockout, first-login, IDOR antar scope = 403+audit) & QA-2 (impor: campur valid/invalid, idempotent, 5.000 baris ditolak ramah) lulus.
@@ -128,6 +129,34 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-16 — Fase 1j: Mobile (Flutter) — login, first-login, onboarding ortu
+
+**Yang dikerjakan:** Mengisi aplikasi HP (sebelumnya hanya rangka cek-health 0g) dengan alur masuk semua peran. (1) **Login:** satu layar dengan pilihan **Siswa** (NIS + Kode Sekolah + password) atau **Guru/Ortu** (email/HP + password). (2) **First-login:** bila wajib, layar ganti password baru + centang setuju Syarat & Ketentuan. (3) **Onboarding orang tua:** alur 4 langkah — daftar nomor HP (kirim OTP) → verifikasi OTP → masukkan kode undangan (tautkan anak) → buat password (OTP + password baru) → selesai. (4) **Home minimal** per peran (sambutan + peran + tombol keluar; fitur lengkap menyusul Fase 2+). Semua memanggil endpoint backend 1b–1h yang sudah ada (tak ada perubahan backend).
+
+**File yang dibuat/diubah (apps/mobile):**
+- `lib/theme.dart` — **(baru)** warna brand + ThemeData.
+- `lib/api/api_client.dart` — **(baru)** klien API (login, change/forgot/reset password, tos, parent register/verify/link) + `ApiException` ramah; method virtual agar mudah di-fake saat test.
+- `lib/api/session.dart` — **(baru)** sesi di memori (token + role + deviceId; decode schoolId dari JWT).
+- `lib/screens/{login,first_login,parent_onboarding,home}_screen.dart` — **(baru)** layar.
+- `lib/main.dart` — rakit MaterialApp (tema + LoginScreen). `test/widget_test.dart` — 5 tes alur (pakai FakeApi).
+
+**Keputusan kecil:** (1) **State sederhana** (setState + ApiClient injectable + sesi global di memori) — cukup untuk Fase 1, tanpa paket state-management berat. (2) Token disimpan **di memori** (belum persisten) — utang: `flutter_secure_storage` saat polish. (3) Onboarding ortu langsung menyambung ke **buat-password via OTP** (forgot→reset) agar ortu langsung bisa login. (4) ToS `docVersion = "v1"` (placeholder).
+
+**Sudah dibuktikan jalan?** Ya — `flutter analyze` **bersih (No issues)**; **`flutter test` 5/5 lulus** (login render & toggle siswa/dewasa, login sukses→Home, login gagal→error, first-login ganti password→Home, onboarding ortu register→otp→link→password→selesai dgn urutan panggilan API benar); **`flutter build web` sukses** (compile penuh ke JS). **Bukti visual:** build web di-serve & di-screenshot via Playwright+Chrome — layar login ter-render rapi (brand, toggle, field, tombol). **Catatan jujur:** E2E interaktif penuh di perangkat/emulator nyata belum (tak ada emulator di server); perilaku dijamin widget test + backend sudah teruji E2E di 1b–1h.
+
+**Sudah di-commit?** Ya — `feat(mobile): auth flows — login, first-login, parent onboarding (OTP+link child) (1j)`. *(Belum di-push: firewall GitHub.)*
+
+**Status:** SELESAI.
+
+**Utang baru:**
+- Token sesi **belum persisten** (hilang saat app ditutup) — pakai `flutter_secure_storage` saat polish.
+- Login siswa pakai **Kode Sekolah = schoolId (UUID)** mentah — kurang ramah; tambah lookup/QR saat polish (sama seperti utang web).
+- E2E mobile di emulator/perangkat nyata + integration_test menyusul (idealnya di 1k atau saat ada perangkat).
+
+**Langkah berikutnya:** **1k** — Uji E2E menyeluruh + gerbang QA-1 & QA-2 (penutup Fase 1).
 
 -----
 
