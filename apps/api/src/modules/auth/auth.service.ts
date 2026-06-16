@@ -8,8 +8,11 @@ import type {
   RefreshRequest,
   TokenPair,
   PasswordChangeRequest,
+  PasswordForgotRequest,
+  PasswordResetRequest,
   TosAcceptRequest,
   SessionListResponse,
+  OtpSentResponse,
   JwtClaims,
   Role,
 } from "@magnoo/shared";
@@ -18,6 +21,7 @@ import type { Env } from "../../config/env";
 import { apiError } from "../../common/api-error";
 import { hashPassword, verifyPassword, checkPasswordPolicy } from "./password";
 import { generateRefreshToken, hashRefreshToken } from "./tokens";
+import { OtpService } from "./otp/otp.service";
 
 /** Aturan lockout (BAGIAN 7.2): gagal 5× → kunci 15 menit. */
 const LOCK_THRESHOLD = 5;
@@ -34,6 +38,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService<Env, true>,
+    private readonly otp: OtpService,
   ) {}
 
   /** POST /auth/login (BAGIAN 7.2). Pesan error tidak membedakan user vs password. */
@@ -332,6 +337,56 @@ export class AuthService {
       data: { revokedAt: new Date() },
     });
     return true;
+  }
+
+  // ── Reset password berbasis OTP (BAGIAN 7.2 — role DEWASA; siswa via admin) ──
+
+  /**
+   * POST /auth/password/forgot — kirim OTP ke phone/email bila akun dewasa ada.
+   * Respons selalu seragam (tidak membocorkan keberadaan akun). Siswa (tanpa
+   * phone/email) tak akan ketemu → tak ada OTP (reset siswa lewat admin sekolah).
+   */
+  async forgotPassword(dto: PasswordForgotRequest): Promise<OtpSentResponse> {
+    const id = dto.phone ?? dto.email!;
+    const user = await this.findAdultByContact(dto);
+    if (user) {
+      await this.otp.request("PASSWORD_RESET", id);
+    }
+    // Bila user tak ada: jangan terbitkan OTP, tapi balas seragam.
+    return { expiresInSec: OtpService.TTL_SEC };
+  }
+
+  /**
+   * POST /auth/password/reset — verifikasi OTP lalu set password baru.
+   * Semua sesi dicabut (paksa login ulang dgn password baru). first-login selesai.
+   */
+  async resetPassword(dto: PasswordResetRequest): Promise<void> {
+    const id = dto.phone ?? dto.email!;
+    await this.otp.verify("PASSWORD_RESET", id, dto.otp);
+    const user = await this.findAdultByContact(dto);
+    if (!user) {
+      // OTP valid tapi akun hilang (mis. dinonaktifkan) — tetap generik.
+      throw apiError("OTP_INVALID", "Kode salah.", HttpStatus.BAD_REQUEST);
+    }
+    const policy = checkPasswordPolicy(dto.newPassword, [user.username, user.phone, user.email]);
+    if (!policy.ok) {
+      throw apiError("PASSWORD_POLICY", "Password baru tidak memenuhi syarat keamanan.", HttpStatus.BAD_REQUEST);
+    }
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: await hashPassword(dto.newPassword), mustChangePassword: false },
+    });
+    // Keamanan: cabut semua sesi aktif setelah ganti password.
+    await this.prisma.session.updateMany({
+      where: { userId: user.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+
+  /** Cari user DEWASA (punya phone/email) berdasar kontak. Null bila tak ada/nonaktif. */
+  private async findAdultByContact(dto: { phone?: string; email?: string }): Promise<User | null> {
+    const where = dto.phone ? { phone: dto.phone } : { email: dto.email! };
+    return this.prisma.user.findFirst({ where: { ...where, deletedAt: null, status: { not: "INACTIVE" } } });
   }
 
   private async signAccessToken(user: User, sessionId: string, linkRoles: Role[]): Promise<string> {

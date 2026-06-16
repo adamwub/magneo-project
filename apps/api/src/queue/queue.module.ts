@@ -32,7 +32,7 @@ const queueProvider: Provider = {
 @Global()
 @Module({
   providers: [connectionProvider, queueProvider],
-  exports: [STUDENT_IMPORT_QUEUE_TOKEN],
+  exports: [STUDENT_IMPORT_QUEUE_TOKEN, REDIS_CONNECTION_TOKEN],
 })
 export class QueueModule implements OnModuleDestroy {
   constructor(

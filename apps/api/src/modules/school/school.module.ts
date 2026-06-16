@@ -6,6 +6,8 @@ import { SchoolService } from "./school.service";
 import { ImportController } from "./import/import.controller";
 import { ImportService } from "./import/import.service";
 import { ImportWorker } from "./import/import.worker";
+import { InviteController } from "./invite/invite.controller";
+import { InviteService } from "./invite/invite.service";
 
 /**
  * Modul school (ADR-003 modular monolith) — Fase 1e: provisioning HQ, pairing Box,
@@ -17,8 +19,8 @@ import { ImportWorker } from "./import/import.worker";
  */
 @Module({
   imports: [AuthModule],
-  controllers: [HqController, SchoolController, ImportController],
-  providers: [SchoolService, ImportService, ImportWorker],
+  controllers: [HqController, SchoolController, ImportController, InviteController],
+  providers: [SchoolService, ImportService, ImportWorker, InviteService],
   exports: [SchoolService],
 })
 export class SchoolModule {}

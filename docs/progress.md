@@ -17,11 +17,12 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
-- **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1: **1a ✅** (skema bersama), **1b ✅** (auth inti), **1c ✅** (RBAC + audit), **1d ✅** (sesi & peran), **1e ✅** (provisioning), **1f ✅** (impor XLSX siswa). Lihat "RENCANA FASE 1" di bawah.
-- **Sedang menuju:** **Potongan 1g** — Undangan ortu: kode undangan + PDF batch (render server), register ortu + OTP (WA = adapter stub/log), verify-otp, link anak. *Menunggu aba-aba pemilik sebelum mulai.*
+- **Posisi sekarang:** **FASE 1 BERJALAN.** Fase 0 (Pondasi) SELESAI (0a–0j ✅). Fase 1: **1a ✅** (skema bersama), **1b ✅** (auth inti), **1c ✅** (RBAC + audit), **1d ✅** (sesi & peran), **1e ✅** (provisioning), **1f ✅** (impor XLSX siswa), **1g ✅** (undangan ortu + OTP + reset password). Lihat "RENCANA FASE 1" di bawah.
+- **Sedang menuju:** **Potongan 1h** — Consent & audit: arsip ConsentRecord + audit-log (append-only ditegakkan di service). *Menunggu aba-aba pemilik sebelum mulai.*
 - **Migrasi DB baru:** `20260616055242_student_import_job_and_nis_key` (tabel `ImportJob` + kolom `School.nisKey` untuk penyamaran NIS per sekolah). Sudah diterapkan ke DB dev. (Sebelumnya: `20260615123600_device_pairing_token_expiry`, `20260614141855_session_prev_refresh_hash`.)
 - **Keputusan NIS sudah DIAMBIL (2026-06-14):** NIS siswa **DISAMARKAN** di cloud (hash berkunci per sekolah jadi `User.username`), NIS mentah TIDAK pernah disimpan di cloud. Detail di "Keputusan Penting" di bawah. *Penerapan transform NIS→samaran masih menyusul di 1f (impor) & disambung ke login; saat ini login siswa mencocokkan `username` apa adanya + butuh `schoolId`.*
-- **Bukti terakhir yang berjalan (1f):** impor XLSX diuji **end-to-end terhadap server + DB nyata** (port 3100, worker in-process aktif): admin login → unggah file **505 baris (500 valid + 5 rusak)** → job COMPLETED dengan total 505 / succeeded 500 / **created 500** / failed 5 ✅; 5 jenis error tertangkap (NIS kosong/format/ganda-dalam-file, kelas tak ada, nama kosong) ✅; **DB: 500 siswa, username = samaran 64-hex, displayName/phone/email NULL, nol NIS mentah** ✅; `nisKey` sekolah dibuat saat impor pertama ✅; `credentials.csv` (500 baris) sekali-unduh — unduh kedua **404** ✅; `errors.csv` (5 baris) ✅; **idempotensi:** unggah file sama lagi → created **0**, succeeded 500 (di-update), jumlah siswa tetap **500** (tak menggandakan) ✅; audit `IMPORT_COMPLETE` ×2 ✅. Tes unit: api **72/72** (23 baru: pseudonym 6, validasi 11, xlsx 6), shared 24/24. typecheck (4 proyek)/lint/build ✅. *(Bukti 1b–1e sebelumnya tetap berlaku.)*
+- **Bukti terakhir yang berjalan (1g):** alur undangan ortu diuji **end-to-end ke server+DB nyata** (port 3100): admin generate kode utk 1 kelas → **3 kode** + **PDF batch (dengan QR)** ✅; ortu register → OTP (diambil dari log stub) → verify → **temp token** ✅; link anak #1 (temp token) → akun ortu dibuat (role PARENT, phone, schoolId anak) + ParentLink ACTIVE + kode ditandai terpakai ✅; kode dipakai-ulang → **INVITE_CODE_USED** ✅; ortu set password via **forgot→OTP→reset** → login phone+password (role PARENT) ✅; link anak #2 (token penuh) → tertaut 2 anak ✅; sudah-tertaut → **PARENT_ALREADY_LINKED (409)**, revoked/expired/invalid → ditolak benar ✅; audit INVITE_GENERATE & PARENT_LINK_CHILD tercatat ✅. Tes unit: api **81/81** (9 baru: OTP 7, PDF 2), shared 24/24. typecheck (4 proyek)/lint/build ✅. *(Bukti 1b–1f sebelumnya tetap berlaku.)*
+- **Bukti 1f yang berjalan:** impor XLSX diuji **end-to-end terhadap server + DB nyata** (port 3100, worker in-process aktif): admin login → unggah file **505 baris (500 valid + 5 rusak)** → job COMPLETED dengan total 505 / succeeded 500 / **created 500** / failed 5 ✅; 5 jenis error tertangkap (NIS kosong/format/ganda-dalam-file, kelas tak ada, nama kosong) ✅; **DB: 500 siswa, username = samaran 64-hex, displayName/phone/email NULL, nol NIS mentah** ✅; `nisKey` sekolah dibuat saat impor pertama ✅; `credentials.csv` (500 baris) sekali-unduh — unduh kedua **404** ✅; `errors.csv` (5 baris) ✅; **idempotensi:** unggah file sama lagi → created **0**, succeeded 500 (di-update), jumlah siswa tetap **500** (tak menggandakan) ✅; audit `IMPORT_COMPLETE` ×2 ✅. Tes unit: api **72/72** (23 baru: pseudonym 6, validasi 11, xlsx 6), shared 24/24. typecheck (4 proyek)/lint/build ✅. *(Bukti 1b–1e sebelumnya tetap berlaku.)*
 - **GitHub:** **belum bisa push** — firewall environment ini memblokir TLS ke `github.com`/`api.github.com` (TCP nyambung, TLS di-drop). Internet umum jalan (cli.github.com & Cloudflare OK). Token & `gh` 2.94 sudah siap. Tindakan: buka firewall (allowlist github.com, api.github.com, codeload.github.com, *.githubusercontent.com:443) ATAU push dari laptop. Backup off-site jadi PR penting — sementara hanya ada satu salinan di server ini.
 - **Catatan infra:** PostgreSQL dev kini lewat **compose resmi** (`infra/docker-compose.dev.yml`), volume bernama `magnoo-postgres-data` → **data persisten**. Nyalakan semua: `pnpm dev:infra` (atau `docker compose -f infra/docker-compose.dev.yml up --build`); matikan: `pnpm dev:infra:down`. API otomatis `prisma migrate deploy` saat start. Kontainer Postgres lama yang berdiri sendiri sudah dihapus (digantikan compose).
 - **Commit terakhir:** lihat `git log --oneline` (1a = `feat(shared): Fase 1 auth & school schemas`).
@@ -74,7 +75,7 @@
 - [x] **1d** Sesi & peran — batas perangkat (siswa 2 / lain 3), refresh reuse-detection→revoke semua, role-switch (linkRoles), list/revoke sesi
 - [x] **1e** Provisioning — HQ buat sekolah, pairing token Box, akun admin (sekali tampil), setting sekolah, CRUD kelas, wizard kenaikan kelas (preview→confirm)
 - [x] **1f** Impor XLSX — job BullMQ + validasi per-baris + laporan error ramah + idempotent + **penyamaran NIS** (hash berkunci per sekolah)
-- [ ] **1g** Undangan ortu — kode undangan + PDF batch (render server), register ortu + OTP (WA = adapter stub/log), verify-otp, link anak
+- [x] **1g** Undangan ortu — kode undangan + PDF batch (render server), register ortu + OTP (WA = adapter stub/log), verify-otp, link anak
 - [ ] **1h** Consent & audit — arsip ConsentRecord + audit-log (append-only ditegakkan di service)
 - [ ] **1i** Web — `/hq` wizard provision + `/school` Pengguna & Kelas
 - [ ] **1j** Mobile — login + first-login semua peran + OTP ortu & link anak
@@ -125,6 +126,42 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-16 — Fase 1g: Undangan ortu (kode + PDF/QR, OTP, link anak, reset password)
+
+**Yang dikerjakan:** Membuat alur lengkap **mengundang & mendaftarkan orang tua**. (1) **Kode undangan (admin sekolah):** admin membuat kode untuk siswa (per kelas atau daftar id) → sistem menerbitkan kode 8-karakter unik (berlaku 30 hari) + **PDF kartu** untuk dicetak & dibagikan ke ortu; tiap kartu memuat **QR kode** (agar app ortu tinggal pindai), label kelas, tanggal kadaluarsa, dan ID siswa opaque (cloud tak punya nama siswa — ADR-005). Admin juga bisa **membatalkan** kode. (2) **Registrasi ortu via OTP:** ortu daftar dengan nomor HP → kode OTP 6 digit dikirim (untuk saat ini **stub yang dicatat ke log** — kanal WA asli fase lanjut, BAGIAN 11.2) → ortu masukkan OTP → dapat **temp token** → tukar **kode undangan** untuk menautkan diri ke anaknya. Satu ortu bisa menautkan beberapa anak. (3) **Set/Reset password (OTP):** karena registrasi ortu tak memberi password, dibangun `forgot`→OTP→`reset` sehingga ortu (dan user dewasa lain) bisa menetapkan password lalu login normal (HP + password).
+
+**Keputusan pemilik (sesi ini):** (1) **Bangun set-password via OTP sekarang** (`/auth/password/forgot` + `/auth/password/reset`) supaya di akhir 1g ortu bisa login penuh. (2) **PDF kartu memakai QR code** (tambah library `qrcode`).
+
+**File yang dibuat/diubah:**
+- `apps/api/src/modules/auth/otp/otp.service.ts` + `otp-notifier.ts` — **(baru)** OTP berbasis **Redis** (kode disimpan sebagai hash, TTL 5 mnt, batas 5 percobaan, rate-limit 3/10 mnt) + pengirim stub (log).
+- `apps/api/src/modules/auth/parent/parent.service.ts` — **(baru)** register → OTP, verify → temp token, link-child (validasi kode + buat/temukan akun ortu + ParentLink + tandai kode terpakai). Temp token = JWT `{purpose:PARENT_LINK, phone}` (ditolak otomatis oleh JwtAuthGuard biasa karena gagal `jwtClaimsSchema`).
+- `apps/api/src/modules/auth/auth.service.ts` — tambah `forgotPassword`/`resetPassword` (OTP) + cabut semua sesi setelah reset.
+- `apps/api/src/modules/auth/auth.controller.ts` — endpoint `parent/register`, `parent/verify-otp`, `parent/link-child`, `password/forgot`, `password/reset`.
+- `apps/api/src/modules/auth/auth.module.ts` — daftarkan OtpService/OtpNotifier/ParentService.
+- `apps/api/src/modules/school/invite/` — **(baru)** `invite.service.ts` (generate kode + PDF + revoke + unduh), `invite.controller.ts` (`/school/invite-codes/generate`, `/:id/revoke`, `GET /batch/:batchId`), `invite-pdf.ts` (render PDF + QR via pdf-lib & qrcode), `invite-storage.ts` (PDF per-sekolah di disk, izin 0600).
+- `apps/api/src/modules/school/school.module.ts` — daftarkan InviteController/Service.
+- `apps/api/src/queue/queue.module.ts` — ekspor token koneksi Redis (dipakai bersama OtpService).
+- `apps/api/package.json` — tambah `pdf-lib`, `qrcode`, `@types/qrcode`.
+- Tes baru: `otp/otp.service.test.ts` (7, pakai Redis tiruan), `invite/invite-pdf.test.ts` (2).
+
+**Keputusan kecil:** (1) OTP & temp token **tidak menyentuh DB** (Redis + JWT pendek) → ringan, otomatis kedaluwarsa. (2) Akun ortu baru dibuat dgn password placeholder acak + `mustChangePassword`; password sesungguhnya via reset OTP. (3) `link-child` menerima Bearer **temp token ATAU token ortu penuh** (untuk tautkan anak berikutnya). (4) PDF di-scope per-sekolah lewat path folder (admin hanya bisa unduh batch sekolahnya). (5) `forgot`/`reset` hanya untuk user dewasa (punya phone/email); siswa reset lewat admin (BAGIAN 7.2).
+
+**Sudah dibuktikan jalan?** Ya, dua lapis. **Tes unit:** api **81/81** (9 baru); typecheck (4 proyek)/lint/build ✅. **Uji E2E ke server+DB nyata (port 3100):** 22 cek lulus — generate 3 kode + PDF/QR, register→OTP→verify→temp token, link anak #1 (temp) + akun ortu dibuat + kode terpakai, kode dipakai-ulang ditolak, set password via OTP reset → login penuh, link anak #2 (token penuh) → 2 anak, sudah-tertaut/revoked/expired/invalid semua ditolak benar, audit tercatat. OTP diambil dari log stub. Data uji & skrip uji dibersihkan (tidak di-commit).
+
+**Sudah di-commit?** Ya — `feat(auth,school): parent invitation flow — invite codes + PDF/QR, OTP register/verify, link-child, OTP password reset (1g)`. *(Belum di-push: firewall blokir TLS ke GitHub — push dari laptop.)*
+
+**Status:** SELESAI.
+
+**Utang baru (dicatat, kerjakan nanti):**
+- Pengirim OTP masih **stub log** — ganti dgn adapter WA/SMS nyata (BAGIAN 11.2) + biaya; **jangan log kode OTP di produksi** (saat ini sengaja di-log utk dev/uji).
+- PDF batch undangan disimpan **file di disk** server (0600) — pindah ke object storage + tautan sekali-pakai (sama seperti utang impor 1f).
+- Kartu PDF belum menampilkan **nama siswa** (cloud tak punya) — tampilkan via Box bridge saat Fase 3.
+- Akun ortu `schoolId` = sekolah anak pertama; bila ortu punya anak lintas sekolah perlu dipikirkan ulang (scope ortu→anak sudah lewat ParentLink, jadi aman; schoolId hanya penanda).
+
+**Langkah berikutnya:** Potongan **1h** — Consent & audit (arsip ConsentRecord + penegakan audit-log append-only di service). Tunggu aba-aba pemilik.
 
 -----
 
