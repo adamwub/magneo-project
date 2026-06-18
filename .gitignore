@@ -38,3 +38,4 @@ apps/mobile/.flutter-plugins-dependencies
 
 # Prisma local
 apps/api/prisma/*.db
+_backup/

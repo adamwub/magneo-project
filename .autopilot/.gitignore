@@ -1,0 +1,8 @@
+# Rahasia & state runtime autopilot — jangan di-commit
+bot_token.txt
+owner_chat.txt
+tg_offset.txt
+inbox.txt
+inbox.processed.txt
+lock
+control.json
