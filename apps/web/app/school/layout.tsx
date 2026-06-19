@@ -14,6 +14,7 @@ export default function SchoolLayout({ children }: { children: React.ReactNode }
       items={[
         { href: "/school", label: "Ringkasan" },
         { href: "/school/absensi", label: "Absensi" },
+        { href: "/school/pengumuman", label: "Pengumuman" },
         { href: "/school/kelas", label: "Kelas" },
         { href: "/school/pengguna", label: "Pengguna" },
       ]}
