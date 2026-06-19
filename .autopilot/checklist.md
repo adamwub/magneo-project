@@ -9,9 +9,10 @@
 -----
 
 ## Sedang dikerjakan
-- **Fase 2** (mode otonom). Berikutnya: **2e** — hitung status kehadiran harian + koreksi guru.
+- **Fase 2** (mode otonom). Berikutnya: **2f** — laporan kehadiran (siswa/kelas/sekolah).
 
 ## Selesai (terbaru di atas)
+- **2026-06-19** — Fase 2 **2e**: status kehadiran harian otomatis (hadir/telat/izin/sakit/alpa) + koreksi oleh wali kelas/admin (≤3 hari, tercatat audit). 136 tes api lulus. ✅
 - **2026-06-19** — Fase 2 **2d**: siswa absen scan QR (`POST /attendance/qr/checkin`) — cek token+lokasi(GPS/WiFi)+anti-dobel+anti-replay, status hadir/telat dari jam sekolah. 122 tes api lulus. ✅
 - **2026-06-19** — Fase 2 **2c**: token QR aman — tiap sekolah punya kunci rahasia tersimpan terenkripsi, layar gerbang tampilkan token 8-digit ganti tiap 30 dtk. (Audit security: aman.) ✅
 - **2026-06-19** — Fase 2 **2b**: cek lokasi absen (GPS radius sekolah ATAU WiFi sekolah). Security nahan 1 bug (IP bisa dipalsukan) → sudah kufix. ✅

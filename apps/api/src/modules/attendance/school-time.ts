@@ -40,3 +40,14 @@ export function schoolLocalTime(at: Date, tz: string): SchoolLocalTime {
 export function presentOrLate(localHHMM: string, lateCutoff: string): "PRESENT" | "LATE" {
   return localHHMM <= lateCutoff ? "PRESENT" : "LATE";
 }
+
+/**
+ * Selisih hari antara dua tanggal sekolah "YYYY-MM-DD" (b - a), bilangan bulat.
+ * Dipakai cek jendela koreksi ≤ H+3 (BAGIAN 10.4). Tanggal diperlakukan sebagai UTC
+ * tengah malam → bebas DST/timezone (kedua sisi sama-sama tanggal sekolah).
+ */
+export function daysBetweenSchoolDates(a: string, b: string): number {
+  const ta = Date.parse(`${a}T00:00:00Z`);
+  const tb = Date.parse(`${b}T00:00:00Z`);
+  return Math.round((tb - ta) / 86_400_000);
+}

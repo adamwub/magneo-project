@@ -2,8 +2,10 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, UseGuards } fro
 import type { Request } from "express";
 import {
   qrCheckinRequestSchema,
+  attendanceCorrectionRequestSchema,
   type QrCurrentResponse,
   type QrCheckinRequest,
+  type AttendanceCorrectionRequest,
   type AttendanceEvent,
   type JwtClaims,
 } from "@magnoo/shared";
@@ -16,6 +18,7 @@ import { Scope } from "../../common/rbac/scope.decorator";
 import { RolesGuard } from "../../common/rbac/roles.guard";
 import { QrTokenService } from "./qr-token.service";
 import { AttendanceService } from "./attendance.service";
+import { CorrectionsService, type CorrectionResult } from "./corrections.service";
 
 /**
  * Endpoint absensi (BAGIAN 8.2 `/attendance/...`).
@@ -27,6 +30,7 @@ export class AttendanceController {
   constructor(
     private readonly qr: QrTokenService,
     private readonly attendance: AttendanceService,
+    private readonly corrections: CorrectionsService,
   ) {}
 
   /**
@@ -55,6 +59,20 @@ export class AttendanceController {
     @Req() req: Request,
   ): Promise<AttendanceEvent> {
     return this.attendance.checkin(user, dto, req.ip);
+  }
+
+  /**
+   * POST /attendance/corrections — koreksi absen (rule 10.4). Wali kelas (≤H+3) / SCHOOL_ADMIN.
+   * Membuat event CORRECTION, mencatat AuditLog before/after, lalu recompute status harian.
+   */
+  @Post("corrections")
+  @Roles("TEACHER", "SCHOOL_ADMIN")
+  @HttpCode(HttpStatus.OK)
+  correct(
+    @CurrentUser() user: JwtClaims,
+    @Body(new ZodValidationPipe(attendanceCorrectionRequestSchema)) dto: AttendanceCorrectionRequest,
+  ): Promise<CorrectionResult> {
+    return this.corrections.correct(user, dto);
   }
 
   /** schoolId pemanggil; tolak akun tanpa sekolah (mis. HQ) — bukan operator gerbang. */

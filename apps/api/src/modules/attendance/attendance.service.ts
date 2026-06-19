@@ -10,6 +10,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { apiError } from "../../common/api-error";
 import { REDIS_CONNECTION_TOKEN } from "../../queue/queue.constants";
 import { QrTokenService } from "./qr-token.service";
+import { DailyStatusService } from "./daily-status.service";
 import { isWithinRadius, isIpInAnyCidr, type GeoPoint } from "./location";
 import { schoolLocalTime, presentOrLate } from "./school-time";
 
@@ -36,6 +37,7 @@ export class AttendanceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly qr: QrTokenService,
+    private readonly daily: DailyStatusService,
     @Inject(REDIS_CONNECTION_TOKEN) private readonly redis: Redis,
   ) {}
 
@@ -123,6 +125,9 @@ export class AttendanceService {
         occurredAt: now,
       },
     });
+
+    // Materialisasi status harian tiap event masuk (BAGIAN 10.3).
+    await this.daily.recompute(studentUserId, schoolId, local.date);
     return this.toDto(event);
   }
 

@@ -32,6 +32,15 @@ export const qrCurrentResponseSchema = z.object({
 });
 export type QrCurrentResponse = z.infer<typeof qrCurrentResponseSchema>;
 
+/** POST /attendance/corrections — koreksi absen (BAGIAN 10.4). status = PRESENT|LATE. */
+export const attendanceCorrectionRequestSchema = z.object({
+  studentUserId: z.string().min(1),
+  date: schoolDateSchema,
+  status: z.enum(ATT_STATUSES),
+  reason: z.string().min(1),
+});
+export type AttendanceCorrectionRequest = z.infer<typeof attendanceCorrectionRequestSchema>;
+
 /** Satu event absensi (immutable; koreksi = event baru, BAGIAN 6.2). */
 export const attendanceEventSchema = z.object({
   id: z.string(),

@@ -3,6 +3,8 @@ import { AuthModule } from "../auth/auth.module";
 import { AttendanceController } from "./attendance.controller";
 import { QrTokenService } from "./qr-token.service";
 import { AttendanceService } from "./attendance.service";
+import { DailyStatusService } from "./daily-status.service";
+import { CorrectionsService } from "./corrections.service";
 
 /**
  * Modul attendance (ADR-003 modular monolith).
@@ -15,7 +17,7 @@ import { AttendanceService } from "./attendance.service";
 @Module({
   imports: [AuthModule],
   controllers: [AttendanceController],
-  providers: [QrTokenService, AttendanceService],
-  exports: [QrTokenService, AttendanceService],
+  providers: [QrTokenService, AttendanceService, DailyStatusService, CorrectionsService],
+  exports: [QrTokenService, AttendanceService, DailyStatusService],
 })
 export class AttendanceModule {}
