@@ -138,6 +138,20 @@
 
 -----
 
+## 2026-06-19 — Fase 2 / 2l-theme: Design-system Soft Pastel Clay/Glass (palet FINAL owner)
+
+**Yang dikerjakan:** Pasang tema final owner di komponen DASAR web (sekali kerja → semua halaman ikut). Palet: warm-sand bg, **SAGE GREEN primary**, powder-blue + blush-peach secondary, **lavender tertiary (tipis)**, warm-charcoal text, **shadow clay HANGAT** (coklat-krem), semantic muted. **Glass hanya overlay**; sidebar/topbar = clay cream solid.
+
+**File:** `apps/web/app/globals.css` (token HSL + util `.clay-card/.clay-raised/.clay-input/.clay-panel/.glass-overlay`), `tailwind.config.ts` (+tertiary), `components/ui/{card,button,input}.tsx`, `components/dashboard-shell.tsx` (clay-panel, bukan glass), `components/sidebar-nav.tsx` (aktif=longest-match, fix bug 2 menu nyala), `app/school/absensi/page.tsx` (status muted). **Doc acuan: `docs/refs/design-system-magneo.md`** (wajib dipakai agen arsitek & visual-QA — gantikan palet lama).
+
+**Bukti NYATA (agen magnoo-visualqa, computed-style + screenshot):** **PASS sesuai tema** — bg warm-sand #E8DDC9, kartu cream #FBF7EF radius 24px + shadow hangat rgba(150,130,100,.22)+puff, tombol/nav-aktif SAGE rgb(139,174,132) (BUKAN merah), field clay-inset 44px, teks #44433C, sidebar solid cream (backdrop-filter none). Audit DOM: **0 merah-nyala, 0 biru-tua, 0 emas lama**. Screenshot di `.autopilot/qa-shots/qa3-*.png` (dikirim owner). web typecheck ✅.
+
+**UTANG (dari QA) → Ide & Utang:** (SEDANG) sidebar belum responsif di HP <768px (konten terhimpit) — perlu off-canvas/drawer atau bottom-nav. (RENDAH) radius nav aktif 16px → samakan 20px. Catatan: lavender token siap, belum dipakai di komponen (dipasang di badge/state aktif saat halaman berikutnya).
+
+**Status:** Tema final LIVE & terbukti. Semua halaman berikutnya otomatis se-tema. Berikutnya: lanjut halaman web fungsional (absensi-kelas/izin/pengumuman) — sudah ber-tema.
+
+-----
+
 ## 2026-06-19 — DEPLOY ke server + QA visual (temuan penting)
 
 **Temuan (lewat agen visual-QA):** Container `magnoo-api` yang live ternyata **rangka kosong Fase-0** (boot 02:54, hanya HealthController, semua `/api/v1/*` → 404). Seluruh aplikasi ada di kode/GitHub tapi **belum pernah ter-deploy** → login gagal di situs live. Owner setujui deploy.
