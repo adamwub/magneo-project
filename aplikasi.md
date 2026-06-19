@@ -1,6 +1,7 @@
-# MAGNOO — RENCANA PEMBANGUNAN APLIKASI (BUILD SPEC v1.1)
+# MAGNOO — RENCANA PEMBANGUNAN APLIKASI (BUILD SPEC v1.2)
 
 > **CATATAN REVISI**
+> - **v1.2 — 19 Juni 2026**: Sinkron dari **Big Blueprint v2** (`01-Strategi/magnoo-big-blueprint-v2.html`). Ditambah: subbagian **1.1 Visi Jangka Panjang (5 Lapisan)** sebagai konteks arah produk — *tanpa mengubah fase teknis 0–8* (build saat ini tetap fokus app sekolah). Ditambah **guardrail 13.13 (Tembok Pemisah Data Anak)**: produk iklan/OOH/data-marketplace lapisan 2–5 hanya boleh memakai data agregat/anonim & sumber non-anak/non-sekolah; data anak tidak pernah menjadi barang dagangan. Lapisan bisnis 2–5 (OOH, platform OOH, programmatic, data marketplace) BELUM menjadi fase buildable — perlu ADR + kajian hukum (PDP/PSE) tersendiri sebelum dibangun. Fase 0–8 & semua ADR tidak berubah.
 > - **v1.1 — 17 Juni 2026**: Modul **Startup Center (Fase 8)** diperluas dari kerangka dasar menjadi modul penuh — 6 model data baru (IdeaSupport, IdeaComment, Competition, CompetitionEntry, MentorProfile, MentorSession) + StartupIdea diperluas, ~30 endpoint API, layar mobile (tab Startup untuk Siswa & Guru, tab Mentor untuk Alumni), dashboard web Sekolah & HQ, aturan bisnis 10.12, ThreadType `STARTUP_ROOM`, dan 2 cron job baru. Fase 1–7 tidak berubah.
 > - **v1.0 — Juni 2026**: Versi awal.
 
@@ -48,6 +49,20 @@
 - HP siswa/ortu banyak yang low-end (RAM 2–3GB, storage sempit) → app harus ringan.
 - Internet & listrik sekolah tidak stabil → sistem lokal (Box) harus tetap hidup offline.
 - Tim kecil → arsitektur harus sederhana untuk dioperasikan (boring tech, modular monolith).
+
+### 1.1 Visi Jangka Panjang (5 Lapisan) — KONTEKS, BUKAN SCOPE BUILD SAAT INI
+
+> Sumber: **Big Blueprint v2** (`01-Strategi/magnoo-big-blueprint-v2.html`). Bagian ini hanya **konteks arah** agar keputusan teknis hari ini tidak menutup pintu ke masa depan. **Tidak mengubah fase teknis 0–8.** Lapisan 2–5 BELUM buildable — masing-masing butuh ADR + kajian hukum (PDP/PSE) tersendiri sebelum mulai.
+
+Magnoo dirancang tumbuh dari app sekolah menjadi jaringan *audience intelligence* dalam 5 lapisan bisnis:
+
+1. **Lapisan 1 — Sekolah & Komunitas** *(SEKARANG; = fase teknis 0–8 dokumen ini).* App sekolah gratis; fondasi data audience terverifikasi institusi.
+2. **Lapisan 2 — Layar & Lokasi Fisik** *(≈ tahun 2).* Layar digital di gerbang sekolah + traffic counting (kamera) + titik non-sekolah.
+3. **Lapisan 3 — Network Media Owner / Platform OOH** *(≈ tahun 3).* Marketplace OOH: pemilik billboard bergabung; Magnoo Audience Index (MAI); kontrak pemerintah/Smart City.
+4. **Lapisan 4 — Programmatic & AI (DOOH)** *(≈ tahun 4).* Self-serve advertiser, dynamic trigger/pricing, API agency.
+5. **Lapisan 5 — Data Marketplace Nasional** *(≈ tahun 5+).* Mobility/audience intelligence dijual ke enterprise & pemerintah via subscription.
+
+**Garis mati yang berlaku untuk SEMUA lapisan di atas:** lihat **Guardrail 13.13** — data anak/sekolah tidak pernah menjadi produk iklan/data. Lapisan 2–5 dibangun di atas data agregat/anonim & sumber non-anak. Setiap lapisan baru = keputusan pemilik + ADR + kajian hukum, bukan diturunkan otomatis dari dokumen ini.
 
 ---
 
@@ -1020,6 +1035,7 @@ GET  /startup/demoday/:id/ideas                       (ide yang demoDay=true, ur
 10. ❌ Memanggil LLM provider langsung dari klien atau dari module selain `ai`.
 11. ❌ Menyimpan secret di repo; semua via env/vault.
 12. ❌ Mengganti keputusan ADR tanpa konfirmasi pemilik proyek.
+13. ❌ **TEMBOK PEMISAH DATA ANAK** — Data anak/siswa/sekolah TIDAK PERNAH boleh menjadi produk iklan, OOH, atau data-marketplace (lapisan bisnis 2–5, lihat 1.1). Dilarang: menjual/membagikan/mengekspor data audience yang bersumber dari anak/sekolah; menautkan identitas individu anak ke produk iklan/intelligence; menurunkan profil komersial dari data siswa. Produk lapisan 2–5 HANYA boleh memakai data **agregat/anonim** (mis. hitungan traffic tanpa identitas) & sumber **non-anak/non-sekolah**. Setiap fitur yang menyentuh ini = berhenti, perlu ADR + kajian hukum (PDP/PSE) + persetujuan pemilik. Memperkuat 13.2 & 13.4.
 
 ---
 

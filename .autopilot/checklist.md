@@ -12,7 +12,7 @@
 - _(belum mulai — menunggu iterasi pertama)_
 
 ## Selesai (terbaru di atas)
-- _(kosong)_
+- **2026-06-19** — Sinkron Big Blueprint v2 → `aplikasi.md` **v1.2**: tambah Visi 5-lapisan (konteks) + guardrail 13.13 tembok data anak. Fase teknis 0–8 tidak berubah. ✅
 
 ## Tertahan / butuh keputusan owner
 - _(kosong)_

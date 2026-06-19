@@ -17,6 +17,7 @@
 
 > Papan status sekali-lihat. Selalu diperbarui setiap ada perubahan. Kalau bingung "sampai mana?", jawabannya ada di sini.
 
+- **⚠️ KONSTITUSI DIPERBARUI (2026-06-19): `aplikasi.md` naik v1.1 → v1.2.** Sinkron dari **Big Blueprint v2** (dokumen STRATEGI, disimpan di `01-Strategi/magnoo-big-blueprint-v2.html`). **Hanya 2 tambahan; FASE TEKNIS 0–8 & semua ADR TIDAK BERUBAH:** (1) subbagian **1.1 Visi Jangka Panjang (5 Lapisan)** — konteks arah bisnis (Sekolah → OOH/Layar → Platform OOH → Programmatic → Data Marketplace); lapisan 2–5 BELUM buildable (butuh ADR + kajian hukum tersendiri). (2) **Guardrail 13.13 — Tembok Pemisah Data Anak**: data anak/sekolah tak pernah jadi produk iklan/OOH/data-marketplace; lapisan 2–5 hanya boleh data agregat/anonim & sumber non-anak. Backup pra-sinkron: `_backup/aplikasi.SEBELUM-sinkron-v2.*.md`. **Tidak berdampak ke Fase 2.**
 - **⚠️ KONSTITUSI DIPERBARUI (2026-06-17): `aplikasi.md` naik v1.0 → v1.1.** Pemilik mengirim revisi via Telegram bot. **Satu-satunya perubahan isi:** modul **Startup Center (Fase 8)** diperluas dari kerangka dasar jadi modul penuh — 6 model data baru (IdeaSupport, IdeaComment, Competition, CompetitionEntry, MentorProfile, MentorSession) + StartupIdea diperluas, ~30 endpoint, layar mobile (tab Startup Siswa & Guru, tab Mentor Alumni), dashboard web Sekolah & HQ, aturan bisnis **10.12**, ThreadType `STARTUP_ROOM`, 2 cron job baru. **Fase 0–7 TIDAK berubah** → tidak berdampak ke pekerjaan saat ini (kita di ambang Fase 2). Versi lama dibackup di `_backup/aplikasi.20260617-083507.md`. Catatan revisi ada di header `aplikasi.md`.
 - **Posisi sekarang:** **🎉 FASE 1 TUNTAS (1a–1k ✅).** Fase 0 ✅. Seluruh Fase 1 selesai: backend (1a–1h), web (1i), mobile (1j), uji E2E + gerbang QA-1 & QA-2 (1k). **Berikutnya: FASE 2** (Attendance + Notifikasi + Izin + Pengumuman). Sebelum mulai: baca BAGIAN 10.2–10.4 & 12 (Fase 2). Menunggu aba-aba pemilik.
 - **Sedang menuju:** **FASE 2** — Attendance (QR), Notifikasi (FCM nyata; WA stub), Izin, Pengumuman. Menunggu aba-aba pemilik + persetujuan rencana potongan.
@@ -131,6 +132,27 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-19 — Sinkron Big Blueprint v2 → aplikasi.md v1.2 (visi 5 lapisan + guardrail data anak)
+
+**Yang dikerjakan:** Pemilik mengirim **Big Blueprint v2** (HTML, dokumen strategi/bisnis untuk CEO) via Telegram. Robot deep-analyze: ternyata ini **bukan spec teknis** — fase teknis yang disebutnya (0 Pondasi → 5 Kuis+Iklan) **persis sama** dengan `aplikasi.md`, jadi **tidak ada yang bentrok di sisi koding**. "Tambahan fase besar"-nya = **5 lapisan BISNIS** (Sekolah → OOH/Layar → Platform OOH → Programmatic DOOH → Data Marketplace nasional), arah tahun 2–5. Atas keputusan pemilik (2 pertanyaan dijawab): (1) catat visi sebagai konteks di `aplikasi.md` TANPA mengubah fase teknis; (2) pasang **tembok pemisah data anak** sebagai garis mati.
+
+**File yang dibuat/diubah:**
+- `01-Strategi/magnoo-big-blueprint-v2.html` — **(dipindah dari _inbox)** dokumen strategi, di luar repo coding.
+- `aplikasi.md` — naik **v1.1 → v1.2**; +catatan revisi header; +subbagian **1.1 Visi Jangka Panjang (5 Lapisan)** (ditandai KONTEKS, bukan scope build); +**guardrail 13.13 Tembok Pemisah Data Anak**. Fase 0–8, 8 ADR, model data, API — semua tidak berubah.
+- `_backup/aplikasi.SEBELUM-sinkron-v2.20260619-073052.md` — backup pra-sinkron.
+
+**Keputusan penting (pemilik, 2026-06-19):** Lapisan bisnis 2–5 (OOH/iklan/data) **BELUM buildable** — tiap lapisan butuh ADR + kajian hukum (PDP/PSE) tersendiri. **Data anak/sekolah TIDAK PERNAH jadi produk iklan/data** (guardrail 13.13, memperkuat 13.2 & 13.4); produk lapisan 2–5 hanya boleh data agregat/anonim & non-anak.
+
+**Sudah dibuktikan?** Ya — verifikasi struktur: header v1.2 ✅, subbagian 1.1 ✅, guardrail 13.13 ✅, **17 BAGIAN tetap utuh** (tak ada heading rusak), BAGIAN 12 (urutan build) tak tersentuh. Ini perubahan dokumen (spec), bukan kode — tak ada tes program.
+
+**Sudah di-commit?** (lihat commit berikutnya `docs(spec): aplikasi.md v1.2 …`).
+
+**Status:** SELESAI. Konstitusi diperbarui aman, tanpa membongkar apa pun.
+
+**Langkah berikutnya:** **FASE 2** tetap jadi pekerjaan teknis berikutnya (tidak terdampak). Menunggu aba-aba pemilik ("go") untuk membuka gerbang autopilot.
 
 -----
 
