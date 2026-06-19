@@ -9,9 +9,10 @@
 -----
 
 ## Sedang dikerjakan
-- **Fase 2** (mode otonom). Berikutnya: **2g-2/2h** — kirim push beneran (BUTUH akun Firebase/FCM dari owner).
+- **Fase 2** (mode otonom). Berikutnya: **2j** — pengumuman (sekolah/kelas/ortu). (Push FCM nunggu akun Firebase.)
 
 ## Selesai (terbaru di atas)
+- **2026-06-19** — Fase 2 **2i**: izin digital — siswa/ortu ajukan, wali kelas/admin setujui, izin disetujui otomatis ubah status absen. 152 tes api lulus, audit security aman. ✅
 - **2026-06-19** — Fase 2 **2g-1**: daftar HP ortu/siswa untuk notifikasi (token aman, diikat akun). Kirim push beneran nunggu akun Firebase. 142 tes api lulus. ✅
 - **2026-06-19** — Fase 2 **2f**: laporan kehadiran — siswa lihat rekapnya, wali kelas lihat kelasnya, kepsek/admin lihat ringkasan sekolah (tanpa nama anak, sesuai aturan privasi). 139 tes api lulus. ✅
 - **2026-06-19** — Fase 2 **2e**: status kehadiran harian otomatis (hadir/telat/izin/sakit/alpa) + koreksi oleh wali kelas/admin (≤3 hari, tercatat audit). 136 tes api lulus. ✅
