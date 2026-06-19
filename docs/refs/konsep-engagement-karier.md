@@ -1,0 +1,145 @@
+# Konsep Fitur: Engagement, Konsultasi & Karier — PROPOSAL (v1)
+
+> **Status:** PROPOSAL, belum mengikat. Dokumen ini **bukan** pengganti `aplikasi.md`
+> (konstitusi). Setelah disetujui owner — dan untuk bagian *uang* & *data anak* setelah
+> kajian hukum PDP/PSE — bagian yang matang akan digabung ke `aplikasi.md` sebagai
+> **adendum (mis. BAGIAN 12B)** + ADR baru. Disusun 2026-06-19 dari diskusi owner.
+> Owner akan memperbarui daftar fitur ini secara berkala.
+
+## 0. Tujuan bisnis (kata owner)
+Guru dapat **penghasilan tambahan** dari berbagi ilmu; siswa punya **rekam jejak skill**
+yang bikin dilirik perusahaan; dan **siswa + guru lebih sering buka app & senang**
+(engagement + retensi), supaya Magneo jadi kebiasaan harian, bukan sekadar alat absen.
+
+## 1. Prinsip kunci (alasan konsep ini aman & layak investasi)
+1. **Pisahkan "membangun nilai" dari "memamerkan/transaksi".** Nilai (skill, poin)
+   dibangun sekarang dengan aman; pamer ke perusahaan & uang-nyata menyala saat dewasa/
+   alumni atau dengan rambu ketat. Siswa = **anak di bawah umur** — itu sumber semua rambu.
+2. **Transparansi, bukan pelarangan.** Komunikasi guru–siswa boleh, asal **terang & tercatat**
+   (bukan DM gelap). Ini menegakkan guardrail 13.5 sekaligus jadi nilai jual ("lebih aman dari WhatsApp").
+3. **Identitas anak tetap di Box** (ADR-005); **data anak tak pernah jadi produk** (13.13).
+4. **Uang nyata menunggu badan hukum + lisensi pembayaran (PJP) + pajak.** Mulai dari
+   **ekonomi poin** internal supaya Magneo belum jadi perantara uang.
+5. **Pisahkan kuasa.** Fungsi guru "menilai/menjaga" dipisah dari "menjual" → cegah konflik
+   kepentingan & paksaan terhadap siswa.
+
+## 2. Fitur → pemetaan arsitektur
+
+### F1. Open Class — Konsultasi Spesialis (tercatat)
+- **Apa:** siswa tanya guru mapel (mis. "lemah matematika → tanya guru matematika"), gaya
+  Halodoc. Dua bentuk: (a) **Open Class** = forum tanya-jawab per mapel, jawaban guru dilihat
+  banyak siswa; (b) **Sesi konsultasi 1-on-1** yang *privat dari teman, terang ke sistem*.
+- **Cara kerja aman:** semua pesan **tercatat & bisa diaudit sekolah**, fokus akademik,
+  ortu/wali kelas dapat melihat; **tidak ada chat gelap/tak-terlog** (13.5). Sesi dibuka–ditutup
+  (seperti sesi Halodoc), bisa diberi rating.
+- **Rumah fase:** ekstensi modul `comms` (ThreadType baru, mis. `OPEN_CLASS` / `CONSULT`).
+  Dekat Fase 2 (comms) tapi dijadwalkan setelah Fase 2 inti selesai.
+- **Model data (perkiraan):** `ThreadType` += OPEN_CLASS/CONSULT; reuse `Thread`/`Message`;
+  `ConsultSession{ id, studentUserId, teacherUserId, subject, status, openedAt, closedAt, rating? }`.
+- **Guardrail:** 13.5 (tak ada chat tersembunyi), 13.1/13.2 (PII), audit append-only 13.9.
+- **UI:** dibuat **menyenangkan** (bukan form sekolah) — penting untuk adopsi.
+
+### F2. Skill Passport → Profil Karier (LinkedIn)
+- **Apa:** siswa kumpulkan skill/pencapaian; **guru verifikasi** jadi badge terpercaya
+  (rekam jejak tumbuh sepanjang sekolah). "Mekar" jadi profil publik yang dilirik perusahaan.
+- **Cara kerja aman:** identitas + detail skill = **sisi Box** (ADR-005); cloud hanya
+  non-identitas/agregat. **Showcase ke perusahaan = saat ALUMNI** (sudah dewasa) — *keputusan
+  owner: mulai dari alumni dulu*. Versi siswa-aktif (opsional, nanti): **wajib izin ortu** +
+  **perusahaan tidak boleh kontak anak langsung** (minat lewat sekolah/ortu).
+- **Rumah fase:** badge & verifikasi skill = **Fase 5**; showcase/rekrutmen = **Fase 7 (Alumni & Karier)**.
+- **Model data:** `SkillBadge{ id, studentUserId, skill, level, verifiedByUserId, verifiedAt }`
+  (detail identitas di Box); profil publik = entitas alumni di Fase 7.
+- **Guardrail:** ADR-005 (identitas anak di Box), 13.13 (tak jadi produk; showcase = izin/agregat),
+  PDP (profil minor butuh consent ortu).
+
+### F3. Ekonomi Poin + 3 lapisan "kenapa siswa betah"
+- **Apa:** poin mengalir **dua arah** (siswa & guru). Engagement bertumpu 3 lapisan:
+  1. **Hadiah instan (pancingan harian):** poin + streak + tukar reward nyata (voucher kopi/pulsa/kuota — mitra Fore/Tomorow dll).
+  2. **Status & identitas:** badge skill terverifikasi, level, pangkat → menyambung ke F2.
+  3. **Sosial & pengakuan:** "siswa minggu ini", papan peringkat kelas (tim, bukan permaluan), bantu-membantu di Open Class.
+- **Anti-curang:** poin hanya dari **aktivitas belajar terukur** (kuis, kehadiran, skill terverifikasi,
+  ikut sesi guru) — **BUKAN** dari "ngobrol/curhat" (rawan & gampang digame). Pakai aturan
+  anti-fraud 10.5 (endap 7 hari, FIFO, flag pola curang).
+- **Magic loop:** tiap aksi harian memberi poin instan **dan** menambah isi Skill Passport →
+  dopamin sekarang membangun aset masa depan yang terlihat tumbuh.
+- **Rumah fase:** **Fase 5** (Gamifikasi). Mekanisme reward & redemption (10.5) **sudah ada**.
+
+### F4. Ruang Ilmu Guru (sidejob guru)
+- **Apa:** guru bikin materi/sesi tambahan (rekaman, kelas live, tantangan) & dapat imbalan.
+- **Imbalan — bertahap:**
+  - **Tahap-1 (aman, lebih cepat — keputusan owner):** **imbalan POIN**. Guru dapat poin saat
+    ilmunya dipakai/diapresiasi; poin → reward. Magneo **bukan perantara uang** → bebas lisensi pembayaran.
+  - **Tahap-2 (uang nyata):** marketplace les berbayar lewat **payment gateway berlisensi** →
+    **butuh badan hukum + kajian PJP/pajak + ADR**, dan **pemisahan peran** (guru yang menilai
+    siswa dipisah dari yang menjual ke siswa itu) / pembayaran di luar app dulu.
+- **Rumah fase:** imbalan-poin = **Fase 5**; uang-nyata = fase berbadan-hukum / ADR khusus.
+- **Guardrail:** anti konflik kepentingan; 13.x; hukum konsumen + pajak (tahap-2).
+
+### F5. Pengumuman Guru → Orang Tua (penyesuaian kecil)
+- **Apa:** wali kelas bisa kirim pengumuman ke **orang tua kelas yang diampu** (bukan se-sekolah).
+- **Status:** pengumuman guru→siswa (CLASS) **sudah ada** (12A.4, dibangun di Fase 2 / potongan 2j).
+  Yang ditambah: longgarkan scope `PARENTS` →
+  **`PARENTS` = SCHOOL_ADMIN/PRINCIPAL + wali kelas (khusus ortu kelas yang diampu, filter classId).**
+- **Rumah fase:** **Fase 2** (penyesuaian 12A.4) — kecil, aman, nyambung dengan PARENT_HOMEROOM.
+
+### F6. Analisa Kesehatan Guru (AI wellness → koneksi dokter)
+- **Apa:** guru input data kesehatan manual → **AI** kasih analisa + **disclaimer**; ke depan
+  bisa terhubung ke dokter (guru↔dokter). *Untuk GURU (dewasa), bukan siswa.*
+- **Kabar baik:** karena subjeknya **dewasa**, ini bebas dari landmine data-anak. Tapi
+  **data kesehatan = kategori khusus PDP** (tetap perlu consent + keamanan tinggi).
+- **Cara kerja aman / bertahap:**
+  - **Tahap-1 (doable):** *self-tracker wellness* (tidur, mood, BMI, dll) + **AI insight gaya hidup**,
+    BUKAN diagnosis. Disclaimer kuat "bukan pengganti nasihat dokter". Data terenkripsi & terpisah.
+  - **Tahap-2 (koneksi dokter):** **JANGAN bangun telemedicine sendiri.** Kemitraan dengan
+    penyedia telemedicine **berlisensi** (Halodoc/Alodokter/Good Doctor dll) yang punya dokter
+    ber-STR/SIP, tanggung jawab medis, & kepatuhan Permenkes. Magneo = pintu masuk + (dengan
+    consent) berbagi data self-track ke mitra.
+- **Guardrail KHUSUS:** data kesehatan guru **PRIVAT — TIDAK terlihat admin/kepsek** (privasi
+  ketenagakerjaan; jangan sampai dipakai menekan guru); AI = **wellness, bukan diagnosis/resep**;
+  consent eksplisit; enkripsi at-rest.
+- **Rumah fase:** dekat modul **AI (Fase 4)** sebagai modul *wellness* terpisah; **koneksi dokter
+  = fase kemitraan + kajian hukum** (Permenkes telemedicine + PDP data kesehatan).
+- **Catatan strategi:** menarik & memperkuat "guru happy", tapi ini masuk ranah **healthtech/
+  telemedicine** yang berat regulasinya — pendekatan kemitraan (bukan bangun sendiri) menjaga
+  Magneo tetap fokus di core sekolah.
+
+## 3. Roadmap bertahap (dipetakan ke fase yang sudah ada)
+| Saat | Yang dibangun |
+|---|---|
+| **Fase 2 (sekarang)** | Selesaikan absensi+notifikasi+izin+pengumuman. **Tambahan kecil:** F5 (pengumuman guru→ortu kelas). |
+| **Fase 5 (Gamifikasi)** | F3 ekonomi poin + 3 lapisan engagement; F2 badge skill dasar; F4 Ruang Ilmu Guru (imbalan **poin**). |
+| **Comms ext.** | F1 Open Class + sesi konsultasi tercatat (setelah Fase 2 inti). |
+| **Fase 7 (Alumni & Karier)** | F2 "mekar" → profil publik / rekrutmen perusahaan (subjek sudah dewasa). |
+| **Fase berbadan-hukum / ADR khusus** | F4 tahap-2 (les berbayar uang-nyata) + F2 showcase siswa-aktif (izin ortu). |
+| **Modul wellness (dekat Fase 4 AI) + fase kemitraan** | F6 tahap-1 (self-tracker + AI wellness guru); F6 tahap-2 (koneksi dokter via mitra telemedicine berlisensi). |
+
+## 4. ADR baru yang dibutuhkan (sebelum bagian berisiko dibangun)
+- **ADR-baru-A — Model monetisasi guru:** poin dulu; uang-nyata hanya via PJP + badan hukum + pemisahan peran.
+- **ADR-baru-B — Penempatan & paparan data skill anak:** badge di Box; showcase = alumni / consent ortu; tak pernah jadi produk (perkuat ADR-005 & 13.13).
+- **ADR-baru-C — Model komunikasi terang (Open Class/Consult):** semua tercatat & auditable; tak ada kanal tersembunyi (perkuat 13.5).
+- **ADR-baru-D — Data kesehatan & wellness AI (F6):** subjek dewasa (guru) saja; consent eksplisit; data kesehatan terenkripsi & **privat dari sekolah**; AI = wellness bukan diagnosis (disclaimer); koneksi dokter hanya via mitra telemedicine **berlisensi** (Permenkes). Data kesehatan siswa = TIDAK dalam scope (anak + kesehatan = langkah hukum jauh lebih berat).
+
+## 5. Keputusan
+**Terkunci (owner, 2026-06-19):**
+- Konsultasi = **Open Class + tercatat**; chat privat-gelap **dibuang**. UI dibuat menyenangkan.
+- Imbalan guru = **mulai dari poin** (uang-nyata menyusul setelah badan hukum).
+- Showcase siswa = **mulai dari alumni** (versi siswa-aktif + izin ortu menyusul).
+- Pengumuman: **wali kelas boleh ke ortu kelasnya** (penyesuaian 12A.4).
+
+**Terbuka / menunggu:**
+- Detail mitra reward (Fore/Tomorow dll) & kurs poin.
+- Kapan & bagaimana naik ke uang-nyata (perlu badan hukum + PJP).
+- Apakah versi showcase siswa-aktif diaktifkan (butuh desain consent ortu).
+- F6 kesehatan guru: lingkup tahap-1 (wellness self-track) & pilihan mitra telemedicine untuk tahap-2.
+
+## 6. Catatan hukum (WAJIB sebelum bagian uang & paparan-anak)
+PDP/PSE: data anak = kategori khusus; profil/paparan minor butuh **consent wali**; konsultasi
+emosional = data sensitif. Pembayaran ke guru = **PJP + pajak + perlindungan konsumen**.
+**Data kesehatan guru (F6) = kategori khusus PDP** + koneksi dokter tunduk **Permenkes telemedicine**
+(dokter ber-STR/SIP, tanggung jawab medis) → tempuh lewat **mitra berlisensi**, bukan bangun sendiri.
+Setiap item ini memicu guardrail 13.13 ("berhenti → ADR + kajian hukum + persetujuan owner").
+
+---
+*Cara pakai: owner menambah/mengubah fitur di sini secara berkala. Saat sebuah fitur matang &
+disetujui (dan lolos kajian hukum bila perlu), arsitek menariknya menjadi adendum `aplikasi.md`
++ ADR, lalu masuk antrean fase yang sesuai. Dokumen ini = ruang rancang, bukan konstitusi.*
