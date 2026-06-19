@@ -9,9 +9,10 @@
 -----
 
 ## Sedang dikerjakan
-- **Fase 2** (mode otonom). Berikutnya: **2d** — siswa scan QR untuk absen (`POST /attendance/qr/checkin`).
+- **Fase 2** (mode otonom). Berikutnya: **2e** — hitung status kehadiran harian + koreksi guru.
 
 ## Selesai (terbaru di atas)
+- **2026-06-19** — Fase 2 **2d**: siswa absen scan QR (`POST /attendance/qr/checkin`) — cek token+lokasi(GPS/WiFi)+anti-dobel+anti-replay, status hadir/telat dari jam sekolah. 122 tes api lulus. ✅
 - **2026-06-19** — Fase 2 **2c**: token QR aman — tiap sekolah punya kunci rahasia tersimpan terenkripsi, layar gerbang tampilkan token 8-digit ganti tiap 30 dtk. (Audit security: aman.) ✅
 - **2026-06-19** — Fase 2 **2b**: cek lokasi absen (GPS radius sekolah ATAU WiFi sekolah). Security nahan 1 bug (IP bisa dipalsukan) → sudah kufix. ✅
 - **2026-06-19** — Fase 2 **2a**: pondasi data (token HP ortu, kode error, skema izin/pengumuman). ✅

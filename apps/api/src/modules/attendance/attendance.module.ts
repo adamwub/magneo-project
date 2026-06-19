@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { AuthModule } from "../auth/auth.module";
 import { AttendanceController } from "./attendance.controller";
 import { QrTokenService } from "./qr-token.service";
+import { AttendanceService } from "./attendance.service";
 
 /**
  * Modul attendance (ADR-003 modular monolith).
@@ -14,7 +15,7 @@ import { QrTokenService } from "./qr-token.service";
 @Module({
   imports: [AuthModule],
   controllers: [AttendanceController],
-  providers: [QrTokenService],
-  exports: [QrTokenService],
+  providers: [QrTokenService, AttendanceService],
+  exports: [QrTokenService, AttendanceService],
 })
 export class AttendanceModule {}

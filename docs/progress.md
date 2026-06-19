@@ -20,7 +20,7 @@
 - **⚠️ KONSTITUSI DIPERBARUI (2026-06-19): `aplikasi.md` naik v1.2 → v1.3 — TAMBAL CELAH FASE 2.** Hasil audit agen `magnoo-architect` (3 BLOCKER + 2 ringan). Ditambah **BAGIAN 12A — Adendum Spec Fase 2 (mengikat)**: koordinat+CIDR WiFi sekolah (A-1), model `DeviceToken`+`/me/devices` utk FCM (B-1), pemutus izin=wali kelas+SCHOOL_ADMIN (C-2), token QR TOTP server-side + anti-replay/foto (A-2/3), state machine izin (C-1), pengetatan notif/izin/pengumuman + 7 kode error baru. Detail & sumber: `docs/refs/fase2-grounding.md`. Backup: `_backup/aplikasi.SEBELUM-tambalfase2.*.md`. **Spec Fase 2 kini "siap dibangun lurus".** ADR & fase 0–8 tidak berubah.
 - **⚠️ KONSTITUSI DIPERBARUI (2026-06-19): `aplikasi.md` naik v1.1 → v1.2.** Sinkron dari **Big Blueprint v2** (dokumen STRATEGI, disimpan di `01-Strategi/magnoo-big-blueprint-v2.html`). **Hanya 2 tambahan; FASE TEKNIS 0–8 & semua ADR TIDAK BERUBAH:** (1) subbagian **1.1 Visi Jangka Panjang (5 Lapisan)** — konteks arah bisnis (Sekolah → OOH/Layar → Platform OOH → Programmatic → Data Marketplace); lapisan 2–5 BELUM buildable (butuh ADR + kajian hukum tersendiri). (2) **Guardrail 13.13 — Tembok Pemisah Data Anak**: data anak/sekolah tak pernah jadi produk iklan/OOH/data-marketplace; lapisan 2–5 hanya boleh data agregat/anonim & sumber non-anak. Backup pra-sinkron: `_backup/aplikasi.SEBELUM-sinkron-v2.*.md`. **Tidak berdampak ke Fase 2.**
 - **⚠️ KONSTITUSI DIPERBARUI (2026-06-17): `aplikasi.md` naik v1.0 → v1.1.** Pemilik mengirim revisi via Telegram bot. **Satu-satunya perubahan isi:** modul **Startup Center (Fase 8)** diperluas dari kerangka dasar jadi modul penuh — 6 model data baru (IdeaSupport, IdeaComment, Competition, CompetitionEntry, MentorProfile, MentorSession) + StartupIdea diperluas, ~30 endpoint, layar mobile (tab Startup Siswa & Guru, tab Mentor Alumni), dashboard web Sekolah & HQ, aturan bisnis **10.12**, ThreadType `STARTUP_ROOM`, 2 cron job baru. **Fase 0–7 TIDAK berubah** → tidak berdampak ke pekerjaan saat ini (kita di ambang Fase 2). Versi lama dibackup di `_backup/aplikasi.20260617-083507.md`. Catatan revisi ada di header `aplikasi.md`.
-- **Posisi sekarang:** Fase 0 ✅, **🎉 FASE 1 TUNTAS (1a–1k ✅)**. **FASE 2 berjalan (mode otonom) — 2a ✅ 2b ✅ 2c ✅.** 2a=pondasi data. 2b=verifikasi lokasi (geofence+IP-CIDR, trust proxy=1, radius 150). 2c=token QR server-side (secret TOTP per-sekolah terenkripsi AES-256-GCM, period=30/digits=8/SHA256, `GET /attendance/qr/current`). **Berikutnya: 2d** (`POST /attendance/qr/checkin` — rule 10.2 inti: token+lokasi+anti-replay, test-first).
+- **Posisi sekarang:** Fase 0 ✅, **🎉 FASE 1 TUNTAS (1a–1k ✅)**. **FASE 2 berjalan (mode otonom) — 2a ✅ 2b ✅ 2c ✅ 2d ✅.** 2a=pondasi data. 2b=verifikasi lokasi (geofence+IP-CIDR, trust proxy=1, radius 150). 2c=token QR server-side (secret TOTP per-sekolah terenkripsi AES-256-GCM, period=30/digits=8/SHA256, `GET /attendance/qr/current`). 2d=check-in QR siswa (token+lokasi+double<5mnt+anti-replay, status PRESENT/LATE). **Berikutnya: 2e** (status harian + koreksi, rule 10.3/10.4).
 - **Sedang menuju:** **FASE 2** (2a ✅ → 2b berikutnya) — Attendance (QR), Notifikasi (FCM nyata; WA stub), Izin, Pengumuman. Rencana potongan 2a–2n disusun arsitek (lihat entri "Potongan 2a"). DoD Fase 2: scan QR→notif <60dtk, rule 10.2–10.4 ada unit test, QA-4 lulus.
 - **Uji E2E Fase 1:** `pnpm --filter @magnoo/api test:e2e` (`test/e2e/fase1.e2e.ts`) — butuh backend hidup (`PORT=3100`) + Postgres/Redis; OTP dibaca dari log server (`E2E_API_LOG`). 23 cek lulus.
 - **Catatan QA visual:** web diuji via Playwright+Chrome; mobile (Flutter) via `flutter analyze` + 5 widget test + `flutter build web` + screenshot. Server lokal uji: backend `PORT=3100`, web `next start -p 3005`, flutter web `python3 -m http.server 3007` di `build/web`.
@@ -133,6 +133,28 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-19 — Fase 2 / Potongan 2d: Check-in QR siswa (rule 10.2 inti)
+
+**Yang dikerjakan:** Endpoint absen siswa `POST /attendance/qr/checkin` (rule 10.2 / 12A.1). Siswa scan QR → server cek: token TOTP valid (2c) → lokasi (GPS dalam radius ATAU IP WiFi sekolah, 2b) → kalau baru absen <5 mnt lalu diabaikan diam-diam (sukses) → anti-replay (token sekali pakai) → catat kehadiran IN dengan status PRESENT/LATE. Waktu & status dihitung dari jam SERVER (timezone sekolah).
+
+**File dibuat/diubah (di apps/api/src/modules/attendance/):**
+- `attendance.service.ts` (baru) — orkestrasi check-in: token→lokasi→double<5mnt→anti-replay(Redis SET NX EX 90 `attreplay:{schoolId}:{userId}:{step}`)→buat AttendanceEvent IN.
+- `school-time.ts` (baru) — `schoolLocalTime` (UTC→timezone sekolah via Intl) + `presentOrLate` (vs late_cutoff). Tanpa lib tanggal.
+- `attendance.controller.ts` — `POST qr/checkin` @Roles("STUDENT"), pakai `req.ip` (trust proxy=1, BUKAN XFF mentah).
+- `attendance.module.ts` — daftarkan AttendanceService.
+
+**Bukti & audit:**
+- Test: 12 baru (`attendance.service` 8 cabang: token invalid/lokasi-required/out-of-area/lulus-GPS/lulus-IP/double-silent/replay-ditolak/no-schoolId; `school-time` 4). **Full api suite 122/122** (18 file, nol regresi); typecheck ✅. (Tak ubah DB/migrasi.)
+- Audit: arsitek-konformansi **PASS** (urutan 10.2 benar, anti-replay per step, occurredAt server, fail-closed, nol scope-creep — tak sentuh recompute/notif). Security & simplifier: **agen kena API 529 (overload) 2×** → dilakukan **review security INLINE** (mandor): AMAN — IP=req.ip, anti-replay per-step deterministik, occurredAt server, nol PII, RBAC tutup lintas-user, fail-closed. **Disarankan re-run agen security saat infra pulih.**
+
+**Utang/peringatan:**
+- (MED, 2n) belum ada **rate-limit** di endpoint checkin (anti brute-force token 8-digit). Risiko rendah (token tampil di gerbang + tetap harus lolos cek lokasi). Tambah ThrottlerGuard.
+- (2e) **recompute DailyAttendanceStatus** belum dilakukan di sini (sesuai scope — 2d hanya buat event IN). 2e: hitung status harian + override permit + pulang-awal + cron.
+
+**Status:** Selesai & terbukti (kode+tes; review security inline AMAN, agen ditunda krn 529). **Berikutnya: 2e** (status harian + koreksi, rule 10.3/10.4). Mode otonom.
 
 -----
 
