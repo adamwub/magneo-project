@@ -138,6 +138,16 @@
 
 -----
 
+## 2026-06-19 — 2l-theme (revisi owner): Powder-blue primary, latar putih/gradasi
+
+**Revisi setelah review owner:** primary HIJAU sage → **POWDER BLUE** (#A2C2D6) untuk tombol & nav aktif; **sage diturunkan jadi aksen kecil**; latar warm-sand tan → **putih lembut + gradasi soft (putih→cream)** + blob biru/peach tipis (hijau minim); kartu cream pakai **gradasi** (putih→cream), bukan flat. File: globals.css (token+bg+clay-card gradient), tailwind. Doc `design-system-magneo.md` diberi blok REVISI.
+
+**Bukti (magnoo-visualqa, computed-style):** PASS — tombol/nav-aktif `rgb(163,195,215)` (powder blue, BUKAN hijau `139,174,132`), body `rgb(252,250,248)` + linear-gradient putih→cream, kartu `linear-gradient(145deg,#fff→#fbf7ef)`, sage hanya angka "Hadir". Screenshot `/tmp/qa4-*.png` (dikirim owner). typecheck ✅.
+
+**Utang tetap:** sidebar belum responsif di HP <768px (layout, bukan tema).
+
+-----
+
 ## 2026-06-19 — Fase 2 / 2l-theme: Design-system Soft Pastel Clay/Glass (palet FINAL owner)
 
 **Yang dikerjakan:** Pasang tema final owner di komponen DASAR web (sekali kerja → semua halaman ikut). Palet: warm-sand bg, **SAGE GREEN primary**, powder-blue + blush-peach secondary, **lavender tertiary (tipis)**, warm-charcoal text, **shadow clay HANGAT** (coklat-krem), semantic muted. **Glass hanya overlay**; sidebar/topbar = clay cream solid.
