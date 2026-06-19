@@ -118,6 +118,18 @@ yang bikin dilirik perusahaan; dan **siswa + guru lebih sering buka app & senang
     (Enum `EwsStatus` sudah ada di skema — nyambung.)
 - **Rumah fase:** **Fase 8 (Analitik)** + modul **AI (Fase 4)**.
 
+### F8. Prestasi Terverifikasi (kebanggaan sekolah)
+- **Apa:** siswa/guru catat prestasi (lomba, juara, sertifikasi) → **diverifikasi** (guru/admin) →
+  jadi catatan terpercaya. Kepsek lihat **agregat** di dashboard ("X siswa berprestasi tahun ini")
+  — untuk dibanggakan & jadi bahan promosi sekolah.
+- **Cara kerja aman:** catatan prestasi = bagian dari **Skill Passport (F2)** (mekanisme verifikasi
+  guru sama). Dashboard kepsek = **hitungan/agregat** → aman. **Papan kebanggaan publik dengan NAMA
+  siswa** (mis. ke calon ortu) = butuh **izin ortu** (anak); versi **tanpa nama / agregat** = bebas.
+- **Rumah fase:** catatan + verifikasi = **Fase 5** (nyambung badge F2); agregat dashboard = **Fase 8/F7**;
+  showcase publik-bernama = consent.
+- **Guardrail:** ADR-005 (nama anak hanya dengan consent untuk paparan publik), 13.13 (bukan produk);
+  internal/agregat aman.
+
 ## 3. Roadmap bertahap (dipetakan ke fase yang sudah ada)
 | Saat | Yang dibangun |
 |---|---|
