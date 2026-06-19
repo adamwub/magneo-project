@@ -39,3 +39,7 @@ apps/mobile/.flutter-plugins-dependencies
 # Prisma local
 apps/api/prisma/*.db
 _backup/
+*firebase*service*account*.json
+*service-account*.json
+firebase-adminsdk*.json
+**/.secrets/
