@@ -20,7 +20,7 @@
 - **⚠️ KONSTITUSI DIPERBARUI (2026-06-19): `aplikasi.md` naik v1.2 → v1.3 — TAMBAL CELAH FASE 2.** Hasil audit agen `magnoo-architect` (3 BLOCKER + 2 ringan). Ditambah **BAGIAN 12A — Adendum Spec Fase 2 (mengikat)**: koordinat+CIDR WiFi sekolah (A-1), model `DeviceToken`+`/me/devices` utk FCM (B-1), pemutus izin=wali kelas+SCHOOL_ADMIN (C-2), token QR TOTP server-side + anti-replay/foto (A-2/3), state machine izin (C-1), pengetatan notif/izin/pengumuman + 7 kode error baru. Detail & sumber: `docs/refs/fase2-grounding.md`. Backup: `_backup/aplikasi.SEBELUM-tambalfase2.*.md`. **Spec Fase 2 kini "siap dibangun lurus".** ADR & fase 0–8 tidak berubah.
 - **⚠️ KONSTITUSI DIPERBARUI (2026-06-19): `aplikasi.md` naik v1.1 → v1.2.** Sinkron dari **Big Blueprint v2** (dokumen STRATEGI, disimpan di `01-Strategi/magnoo-big-blueprint-v2.html`). **Hanya 2 tambahan; FASE TEKNIS 0–8 & semua ADR TIDAK BERUBAH:** (1) subbagian **1.1 Visi Jangka Panjang (5 Lapisan)** — konteks arah bisnis (Sekolah → OOH/Layar → Platform OOH → Programmatic → Data Marketplace); lapisan 2–5 BELUM buildable (butuh ADR + kajian hukum tersendiri). (2) **Guardrail 13.13 — Tembok Pemisah Data Anak**: data anak/sekolah tak pernah jadi produk iklan/OOH/data-marketplace; lapisan 2–5 hanya boleh data agregat/anonim & sumber non-anak. Backup pra-sinkron: `_backup/aplikasi.SEBELUM-sinkron-v2.*.md`. **Tidak berdampak ke Fase 2.**
 - **⚠️ KONSTITUSI DIPERBARUI (2026-06-17): `aplikasi.md` naik v1.0 → v1.1.** Pemilik mengirim revisi via Telegram bot. **Satu-satunya perubahan isi:** modul **Startup Center (Fase 8)** diperluas dari kerangka dasar jadi modul penuh — 6 model data baru (IdeaSupport, IdeaComment, Competition, CompetitionEntry, MentorProfile, MentorSession) + StartupIdea diperluas, ~30 endpoint, layar mobile (tab Startup Siswa & Guru, tab Mentor Alumni), dashboard web Sekolah & HQ, aturan bisnis **10.12**, ThreadType `STARTUP_ROOM`, 2 cron job baru. **Fase 0–7 TIDAK berubah** → tidak berdampak ke pekerjaan saat ini (kita di ambang Fase 2). Versi lama dibackup di `_backup/aplikasi.20260617-083507.md`. Catatan revisi ada di header `aplikasi.md`.
-- **Posisi sekarang:** Fase 0 ✅, **🎉 FASE 1 TUNTAS (1a–1k ✅)**. **FASE 2 DIMULAI — potongan 2a ✅** (pondasi data: DeviceToken+migrasi, 7 error code, skema shared izin/pengumuman/device/QR-current, settings geo+wifi_cidrs; lihat entri 2a + rencana 14 potongan di bawah). **Berikutnya: 2b** (settings sekolah geo/wifi + helper geofence Haversine + IP-in-CIDR + trust proxy). Menunggu aba-aba owner.
+- **Posisi sekarang:** Fase 0 ✅, **🎉 FASE 1 TUNTAS (1a–1k ✅)**. **FASE 2 berjalan (mode otonom) — 2a ✅ 2b ✅.** 2a=pondasi data (DeviceToken+migrasi, 7 error code, skema shared). 2b=verifikasi lokasi (geofence Haversine + IP-in-CIDR + trust proxy=1; default radius 150 per 12A.1). **Berikutnya: 2c** (token QR server-side: secret TOTP terenkripsi AES-256-GCM + `GET /attendance/qr/current`).
 - **Sedang menuju:** **FASE 2** (2a ✅ → 2b berikutnya) — Attendance (QR), Notifikasi (FCM nyata; WA stub), Izin, Pengumuman. Rencana potongan 2a–2n disusun arsitek (lihat entri "Potongan 2a"). DoD Fase 2: scan QR→notif <60dtk, rule 10.2–10.4 ada unit test, QA-4 lulus.
 - **Uji E2E Fase 1:** `pnpm --filter @magnoo/api test:e2e` (`test/e2e/fase1.e2e.ts`) — butuh backend hidup (`PORT=3100`) + Postgres/Redis; OTP dibaca dari log server (`E2E_API_LOG`). 23 cek lulus.
 - **Catatan QA visual:** web diuji via Playwright+Chrome; mobile (Flutter) via `flutter analyze` + 5 widget test + `flutter build web` + screenshot. Server lokal uji: backend `PORT=3100`, web `next start -p 3005`, flutter web `python3 -m http.server 3007` di `build/web`.
@@ -133,6 +133,32 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-19 — Fase 2 / Potongan 2b: Verifikasi lokasi sekolah (geofence + IP WiFi)
+
+**Yang dikerjakan:** Helper murni untuk memastikan siswa benar-benar di sekolah saat absen (BAGIAN 10.2 / 12A.1) — dipakai endpoint check-in nanti (2c). Aturan OR: lolos bila GPS dalam radius sekolah ATAU IP klien di jaringan WiFi sekolah.
+
+**File yang dibuat/diubah:**
+- `apps/api/src/modules/attendance/location.ts` (baru) — fungsi murni: `haversineMeters`, `isWithinRadius` (geofence), `ipv4ToLong`, `ipInCidr`, `isIpInAnyCidr` (cek IP ∈ CIDR WiFi). Tanpa I/O.
+- `apps/api/src/modules/attendance/location.test.ts` (baru) — 7 tes (jarak Haversine, radius dalam/luar, CIDR /0…/32, octet invalid).
+- `apps/api/src/main.ts` — `app.set("trust proxy", 1)` (NestExpressApplication) agar `req.ip` = IP asli klien yang dilihat Caddy (1 hop).
+- `packages/shared/src/constants.ts` — default `qr_geo_radius_m` **300→150**.
+
+**Keputusan & konflik spek (PENTING, untuk owner):**
+- **Default radius: 10.1 menulis `300`, tapi 12A.1 (adendum MENGIKAT v1.3) menulis `150`.** Resolusi: **12A menang** (adendum mengikat + lebih spesifik + lebih baru) → default = **150 m** (lebih ketat anti-curang). Tetap bisa di-override per sekolah. Saran ke owner: tambahkan catatan silang di 10.1 (baris 878) agar tak membingungkan. *(Disetujui dua agen audit.)*
+- **Sumber IP penegakan = `req.ip` (Express, trust proxy=1), BUKAN header XFF mentah.**
+
+**Bukti & audit:**
+- Test: util lokasi **7/7**; shared **31/31** (default baru tak memecah tes); typecheck api ✅.
+- **Audit security menemukan BLOCKER (HIGH):** versi awal pakai `trust proxy: true` + helper `leftmostXff` → leftmost-XFF bisa dipalsukan klien (siswa dari rumah ngaku di WiFi sekolah) + cemar audit IP. **Diperbaiki:** `trust proxy=1`, `leftmostXff` **dihapus total**. **Re-audit security: PASS.** Arsitek-konformansi: PASS (radius 150 benar, OR-lokasi siap, nol scope-creep, Haversine/CIDR benar).
+
+**Utang/peringatan WAJIB untuk 2c (dari audit):**
+- Endpoint check-in: sumber IP = `req.ip` saja (jangan parse XFF). Validasi settings: **tolak `wifiCidrs` `/0`/overbroad**. Settings kosong (tak ada geo & wifiCidrs) → **fail-closed** `ATTENDANCE_LOCATION_REQUIRED`. TOTP secret server-side only. Anti-replay per (userId,step). Audit append-only tanpa PII/lat-lng presisi.
+- Operasional: pastikan port app TIDAK pernah ter-expose langsung ke internet (hanya via Caddy) — syarat `trust proxy=1` aman.
+
+**Status:** Selesai & terbukti. **Berikutnya: 2c** (token QR server-side: secret TOTP terenkripsi + `GET /attendance/qr/current`). Mode otonom — lanjut.
 
 -----
 

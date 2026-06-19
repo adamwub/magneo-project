@@ -16,7 +16,9 @@ export const SCHOOL_SETTING_DEFAULTS = {
   absent_cutoff: "09:00",
   jam_pulang: "15:30",
   wifi_hours: "06:00-17:00",
-  qr_geo_radius_m: 300,
+  // BAGIAN 12A.1 (adendum mengikat v1.3) memperketat default radius 300→150 m anti-curang;
+  // menang atas 10.1 (=300). Tetap bisa di-override per sekolah.
+  qr_geo_radius_m: 150,
   student_wifi_mbps: 5,
   tutor_daily_quota: 30,
   teacher_gen_daily_quota: 20,
