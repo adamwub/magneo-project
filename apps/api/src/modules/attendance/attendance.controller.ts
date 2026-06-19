@@ -1,11 +1,18 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
 import {
   qrCheckinRequestSchema,
   attendanceCorrectionRequestSchema,
+  attendanceMonthQuerySchema,
+  attendanceDateQuerySchema,
   type QrCurrentResponse,
   type QrCheckinRequest,
   type AttendanceCorrectionRequest,
+  type AttendanceMonthQuery,
+  type AttendanceDateQuery,
+  type AttendanceMineResponse,
+  type ClassAttendanceResponse,
+  type SchoolAttendanceSummary,
   type AttendanceEvent,
   type JwtClaims,
 } from "@magnoo/shared";
@@ -19,6 +26,7 @@ import { RolesGuard } from "../../common/rbac/roles.guard";
 import { QrTokenService } from "./qr-token.service";
 import { AttendanceService } from "./attendance.service";
 import { CorrectionsService, type CorrectionResult } from "./corrections.service";
+import { AttendanceReadService } from "./attendance-read.service";
 
 /**
  * Endpoint absensi (BAGIAN 8.2 `/attendance/...`).
@@ -31,7 +39,41 @@ export class AttendanceController {
     private readonly qr: QrTokenService,
     private readonly attendance: AttendanceService,
     private readonly corrections: CorrectionsService,
+    private readonly read: AttendanceReadService,
   ) {}
+
+  /** GET /attendance/me?month=YYYY-MM — rekap kehadiran siswa sendiri. */
+  @Get("me")
+  @Roles("STUDENT")
+  mine(
+    @CurrentUser() user: JwtClaims,
+    @Query(new ZodValidationPipe(attendanceMonthQuerySchema)) q: AttendanceMonthQuery,
+  ): Promise<AttendanceMineResponse> {
+    return this.read.mine(user.sub, q.month);
+  }
+
+  /** GET /attendance/class/:classId?date= — rekap kelas (wali kelas / admin). */
+  @Get("class/:classId")
+  @Roles("TEACHER", "SCHOOL_ADMIN")
+  @Scope("class", { param: "classId", resource: "class" })
+  classDay(
+    @CurrentUser() user: JwtClaims,
+    @Param("classId") classId: string,
+    @Query(new ZodValidationPipe(attendanceDateQuerySchema)) q: AttendanceDateQuery,
+  ): Promise<ClassAttendanceResponse> {
+    return this.read.classDay(this.schoolIdOf(user), classId, q.date);
+  }
+
+  /** GET /attendance/school/summary?date= — ringkasan sekolah (kepsek / admin). */
+  @Get("school/summary")
+  @Roles("PRINCIPAL", "SCHOOL_ADMIN")
+  @Scope("school")
+  schoolSummary(
+    @CurrentUser() user: JwtClaims,
+    @Query(new ZodValidationPipe(attendanceDateQuerySchema)) q: AttendanceDateQuery,
+  ): Promise<SchoolAttendanceSummary> {
+    return this.read.schoolSummary(this.schoolIdOf(user), q.date);
+  }
 
   /**
    * GET /attendance/qr/current — token QR berjalan untuk layar gerbang (12A.1).

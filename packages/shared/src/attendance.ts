@@ -54,6 +54,52 @@ export const attendanceEventSchema = z.object({
 });
 export type AttendanceEvent = z.infer<typeof attendanceEventSchema>;
 
+// ── Laporan kehadiran (BAGIAN 8.2 GET /attendance/me|class|school) — Fase 2 (2f) ──
+// Catatan privasi (ADR-005 / 13.2): respons cloud TANPA nama siswa — hanya userId
+// (pseudonim). Pemetaan ke nama asli hanya di Box (Fase 3).
+
+/** GET /attendance/me?month=YYYY-MM [STUDENT diri sendiri]. */
+export const attendanceMonthQuerySchema = z.object({
+  month: z.string().regex(/^\d{4}-\d{2}$/, "Format bulan YYYY-MM."),
+});
+export type AttendanceMonthQuery = z.infer<typeof attendanceMonthQuerySchema>;
+
+/** GET /attendance/class/:classId?date= dan /school/summary?date=. */
+export const attendanceDateQuerySchema = z.object({ date: schoolDateSchema });
+export type AttendanceDateQuery = z.infer<typeof attendanceDateQuerySchema>;
+
+export const attendanceMineResponseSchema = z.object({
+  month: z.string(),
+  days: z.array(z.object({ date: schoolDateSchema, finalStatus: z.enum(FINAL_ATT_STATUSES) })),
+});
+export type AttendanceMineResponse = z.infer<typeof attendanceMineResponseSchema>;
+
+/** Satu baris rekap kelas — userId pseudonim, TANPA nama (ADR-005). */
+export const classAttendanceRowSchema = z.object({
+  userId: z.string(),
+  finalStatus: z.enum(FINAL_ATT_STATUSES),
+  firstInAt: z.string().nullable(),
+});
+export const classAttendanceResponseSchema = z.object({
+  classId: z.string(),
+  date: schoolDateSchema,
+  students: z.array(classAttendanceRowSchema),
+});
+export type ClassAttendanceResponse = z.infer<typeof classAttendanceResponseSchema>;
+
+export const schoolAttendanceSummarySchema = z.object({
+  date: schoolDateSchema,
+  counts: z.object({
+    PRESENT: z.number().int().nonnegative(),
+    LATE: z.number().int().nonnegative(),
+    PERMIT: z.number().int().nonnegative(),
+    SICK: z.number().int().nonnegative(),
+    ABSENT_NO_INFO: z.number().int().nonnegative(),
+  }),
+  total: z.number().int().nonnegative(),
+});
+export type SchoolAttendanceSummary = z.infer<typeof schoolAttendanceSummarySchema>;
+
 /** Status harian per siswa (materialized, BAGIAN 6.2). */
 export const dailyAttendanceStatusSchema = z.object({
   userId: z.string(),

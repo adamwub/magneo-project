@@ -20,7 +20,7 @@
 - **⚠️ KONSTITUSI DIPERBARUI (2026-06-19): `aplikasi.md` naik v1.2 → v1.3 — TAMBAL CELAH FASE 2.** Hasil audit agen `magnoo-architect` (3 BLOCKER + 2 ringan). Ditambah **BAGIAN 12A — Adendum Spec Fase 2 (mengikat)**: koordinat+CIDR WiFi sekolah (A-1), model `DeviceToken`+`/me/devices` utk FCM (B-1), pemutus izin=wali kelas+SCHOOL_ADMIN (C-2), token QR TOTP server-side + anti-replay/foto (A-2/3), state machine izin (C-1), pengetatan notif/izin/pengumuman + 7 kode error baru. Detail & sumber: `docs/refs/fase2-grounding.md`. Backup: `_backup/aplikasi.SEBELUM-tambalfase2.*.md`. **Spec Fase 2 kini "siap dibangun lurus".** ADR & fase 0–8 tidak berubah.
 - **⚠️ KONSTITUSI DIPERBARUI (2026-06-19): `aplikasi.md` naik v1.1 → v1.2.** Sinkron dari **Big Blueprint v2** (dokumen STRATEGI, disimpan di `01-Strategi/magnoo-big-blueprint-v2.html`). **Hanya 2 tambahan; FASE TEKNIS 0–8 & semua ADR TIDAK BERUBAH:** (1) subbagian **1.1 Visi Jangka Panjang (5 Lapisan)** — konteks arah bisnis (Sekolah → OOH/Layar → Platform OOH → Programmatic → Data Marketplace); lapisan 2–5 BELUM buildable (butuh ADR + kajian hukum tersendiri). (2) **Guardrail 13.13 — Tembok Pemisah Data Anak**: data anak/sekolah tak pernah jadi produk iklan/OOH/data-marketplace; lapisan 2–5 hanya boleh data agregat/anonim & sumber non-anak. Backup pra-sinkron: `_backup/aplikasi.SEBELUM-sinkron-v2.*.md`. **Tidak berdampak ke Fase 2.**
 - **⚠️ KONSTITUSI DIPERBARUI (2026-06-17): `aplikasi.md` naik v1.0 → v1.1.** Pemilik mengirim revisi via Telegram bot. **Satu-satunya perubahan isi:** modul **Startup Center (Fase 8)** diperluas dari kerangka dasar jadi modul penuh — 6 model data baru (IdeaSupport, IdeaComment, Competition, CompetitionEntry, MentorProfile, MentorSession) + StartupIdea diperluas, ~30 endpoint, layar mobile (tab Startup Siswa & Guru, tab Mentor Alumni), dashboard web Sekolah & HQ, aturan bisnis **10.12**, ThreadType `STARTUP_ROOM`, 2 cron job baru. **Fase 0–7 TIDAK berubah** → tidak berdampak ke pekerjaan saat ini (kita di ambang Fase 2). Versi lama dibackup di `_backup/aplikasi.20260617-083507.md`. Catatan revisi ada di header `aplikasi.md`.
-- **Posisi sekarang:** Fase 0 ✅, **🎉 FASE 1 TUNTAS (1a–1k ✅)**. **FASE 2 berjalan (mode otonom) — 2a ✅ 2b ✅ 2c ✅ 2d ✅ 2e ✅.** 2a=pondasi data. 2b=verifikasi lokasi (geofence+IP-CIDR, trust proxy=1, radius 150). 2c=token QR server-side (secret TOTP per-sekolah terenkripsi AES-256-GCM, period=30/digits=8/SHA256, `GET /attendance/qr/current`). 2d=check-in QR siswa (token+lokasi+double<5mnt+anti-replay, status PRESENT/LATE). 2e=status harian + koreksi absen (10.3/10.4). **Berikutnya: 2f** (read endpoints attendance) lalu 2g/2h notifikasi.
+- **Posisi sekarang:** Fase 0 ✅, **🎉 FASE 1 TUNTAS (1a–1k ✅)**. **FASE 2 berjalan (mode otonom) — 2a ✅ 2b ✅ 2c ✅ 2d ✅ 2e ✅ 2f ✅.** 2a=pondasi data. 2b=verifikasi lokasi (geofence+IP-CIDR, trust proxy=1, radius 150). 2c=token QR server-side (secret TOTP per-sekolah terenkripsi AES-256-GCM, period=30/digits=8/SHA256, `GET /attendance/qr/current`). 2d=check-in QR siswa (token+lokasi+double<5mnt+anti-replay, status PRESENT/LATE). 2e=status harian + koreksi absen (10.3/10.4). 2f=laporan kehadiran (me/class/school). **Berikutnya: 2g/2h** notifikasi (device FCM + push <60dtk).
 - **Sedang menuju:** **FASE 2** (2a ✅ → 2b berikutnya) — Attendance (QR), Notifikasi (FCM nyata; WA stub), Izin, Pengumuman. Rencana potongan 2a–2n disusun arsitek (lihat entri "Potongan 2a"). DoD Fase 2: scan QR→notif <60dtk, rule 10.2–10.4 ada unit test, QA-4 lulus.
 - **Uji E2E Fase 1:** `pnpm --filter @magnoo/api test:e2e` (`test/e2e/fase1.e2e.ts`) — butuh backend hidup (`PORT=3100`) + Postgres/Redis; OTP dibaca dari log server (`E2E_API_LOG`). 23 cek lulus.
 - **Catatan QA visual:** web diuji via Playwright+Chrome; mobile (Flutter) via `flutter analyze` + 5 widget test + `flutter build web` + screenshot. Server lokal uji: backend `PORT=3100`, web `next start -p 3005`, flutter web `python3 -m http.server 3007` di `build/web`.
@@ -136,6 +136,24 @@
 
 -----
 
+## 2026-06-19 — Fase 2 / Potongan 2f: Laporan kehadiran (me/class/school)
+
+**Yang dikerjakan:** 3 endpoint baca laporan kehadiran dari `DailyAttendanceStatus` (materialized 2e).
+- `GET /attendance/me?month=YYYY-MM` [STUDENT diri sendiri] — rekap sebulan.
+- `GET /attendance/class/:classId?date=` [TEACHER wali kelas / SCHOOL_ADMIN, @Scope class] — rekap kelas; siswa tanpa catatan → ABSENT_NO_INFO.
+- `GET /attendance/school/summary?date=` [PRINCIPAL / SCHOOL_ADMIN, @Scope school] — jumlah per status + total.
+
+**File:** `attendance-read.service.ts` (baru) + 3 endpoint di `attendance.controller.ts` + `attendance.module.ts`; `packages/shared/src/attendance.ts` (+query & response schema: month/date, mine/class/summary).
+
+**Privasi (ADR-005 / 13.2):** respons cloud **TANPA nama/NIS** — hanya `userId` pseudonim + status (+firstInAt). Tes membuktikan baris kelas cuma `{userId,finalStatus,firstInAt}`. Nama asli hanya di Box (Fase 3).
+
+**Bukti:** 3 tes read service (filter bulan, default ABSENT_NO_INFO + nol field nama, summary counts+total); **full api 139/139** (21 file, nol regresi); typecheck ✅; shared build ✅. Tanpa migrasi.
+**Audit:** agen masih berisiko API 529 → **review INLINE**: konformansi cocok spek BAGIAN 8.2 (662–665); IDOR aman (semua identifier dari JWT/@Scope, bukan body); nol PII. Re-run agen saat infra pulih.
+
+**Status:** Selesai & terbukti. **Berikutnya: 2g** (registrasi device `/me/devices` + queue notifikasi + FCM nyata). Mode otonom.
+
+-----
+
 ## 2026-06-19 — Fase 2 / Potongan 2e: Status harian + koreksi absen (rule 10.3/10.4)
 
 **Yang dikerjakan:** Menghitung status kehadiran harian tiap siswa (10.3) + endpoint koreksi absen guru/admin (10.4).
@@ -172,7 +190,7 @@
 - (MED, 2n) belum ada **rate-limit** di endpoint checkin (anti brute-force token 8-digit). Risiko rendah (token tampil di gerbang + tetap harus lolos cek lokasi). Tambah ThrottlerGuard.
 - (2e) **recompute DailyAttendanceStatus** belum dilakukan di sini (sesuai scope — 2d hanya buat event IN). 2e: hitung status harian + override permit + pulang-awal + cron.
 
-**Status:** Selesai & terbukti (kode+tes; review security inline AMAN, agen ditunda krn 529). 2e=status harian + koreksi absen (10.3/10.4). **Berikutnya: 2f** (read endpoints attendance) lalu 2g/2h notifikasi. Mode otonom.
+**Status:** Selesai & terbukti (kode+tes; review security inline AMAN, agen ditunda krn 529). 2e=status harian + koreksi absen (10.3/10.4). 2f=laporan kehadiran (me/class/school). **Berikutnya: 2g/2h** notifikasi (device FCM + push <60dtk). Mode otonom.
 
 -----
 
