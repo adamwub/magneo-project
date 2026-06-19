@@ -136,6 +136,32 @@
 
 -----
 
+## 2026-06-19 — Infra: akses publik app via reverse proxy Caddy (HTTP/HTTPS)
+
+**Yang dikerjakan:** Supaya app Magnoo bisa dibuka dari luar (HP/internet), saya pasang "penjaga pintu depan" (reverse proxy **Caddy**) di server. Caddy duduk di port 80 (HTTP) & 443 (HTTPS) dan meneruskan tamu ke `web` (Next.js, port 3001). Backend (`api` 3000) dan database (Postgres/Redis) **tidak** dibuka ke luar — hanya web yang tampil. Karena belum ada domain, HTTPS pakai **sertifikat sementara buatan-sendiri** (self-signed) untuk IP `203.175.127.254` — browser akan kasih peringatan "tidak tepercaya", itu wajar; nanti diganti sertifikat resmi saat domain siap.
+
+**File yang dibuat/diubah:**
+- `infra/Caddyfile` *(baru)* — aturan proxy: `:80` & `:443` → `web:3001`; `tls internal` + `default_sni 203.175.127.254` (perlu karena akses via IP mentah tidak mengirim SNI).
+- `infra/docker-compose.dev.yml` — tambah service `caddy` (image `caddy:2-alpine`, `restart: unless-stopped`, port 80/443, volume cert `magnoo-caddy-data`/`-config`).
+
+**Keputusan kecil yang diambil:**
+- Strategi TLS dipilih **self-signed dulu → Let's Encrypt DNS-01 saat domain siap** (atas persetujuan pemilik "ikut rekomendasi"). TIDAK pakai jalur "forward 80/443 standar" karena IP publik itu sudah penuh dipakai layanan lain (PVE, proxy Sahabat) → risiko bentrok.
+- Hanya `web` yang diekspos; `api`/DB tetap internal.
+
+**Sudah dibuktikan jalan?** Ya (sisi server):
+- `http://localhost:80/` → **200**, body = HTML app Magnoo asli (`lang="id"`, Next.js, ~4.6 KB).
+- `https://localhost:443/` (self-signed, `-k`) → **200**; cert SAN = `IP:203.175.127.254`, issuer = Caddy Local Authority.
+- Container `magnoo-caddy` Up & listen `0.0.0.0:80,443`.
+
+**Sisa langkah (di pemilik / router Mikrotik):** tambah 2 NAT dst-nat di router agar publik nyambung ke server `10.35.46.23`:
+- `:2180 → 10.35.46.23:80` (HTTP), `:21443 → 10.35.46.23:443` (HTTPS). Setelah itu `http://203.175.127.254:2180` & `https://203.175.127.254:21443` bisa dibuka dari luar.
+
+**Catatan/utang:** (1) Postgres & Redis masih bind `0.0.0.0` (aman dari internet karena router tak forward 5432/6379, tapi terbuka di LAN) — hardening nanti. (2) Filter Mikrotik rule aktif `drop forward → 149.154.161.0/24` (satu subnet Telegram) — kemungkinan tak ganggu bot (API di 149.154.167.x), tapi tersangka kalau bot ngadat. (3) Upgrade ke cert resmi (Let's Encrypt DNS-01) saat domain siap.
+
+**Status:** Sisi server **selesai & terbukti**. Akses dari luar menunggu owner menambah NAT di router. (Pekerjaan infra, di luar urutan fase — tidak mengubah Fase 0–8.)
+
+-----
+
 ## 2026-06-19 — Sinkron Big Blueprint v2 → aplikasi.md v1.2 (visi 5 lapisan + guardrail data anak)
 
 **Yang dikerjakan:** Pemilik mengirim **Big Blueprint v2** (HTML, dokumen strategi/bisnis untuk CEO) via Telegram. Robot deep-analyze: ternyata ini **bukan spec teknis** — fase teknis yang disebutnya (0 Pondasi → 5 Kuis+Iklan) **persis sama** dengan `aplikasi.md`, jadi **tidak ada yang bentrok di sisi koding**. "Tambahan fase besar"-nya = **5 lapisan BISNIS** (Sekolah → OOH/Layar → Platform OOH → Programmatic DOOH → Data Marketplace nasional), arah tahun 2–5. Atas keputusan pemilik (2 pertanyaan dijawab): (1) catat visi sebagai konteks di `aplikasi.md` TANPA mengubah fase teknis; (2) pasang **tembok pemisah data anak** sebagai garis mati.

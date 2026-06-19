@@ -77,5 +77,24 @@ services:
       api:
         condition: service_healthy
 
+  # Reverse proxy publik. Listen 80/443 di host -> service `web` (3001).
+  # Akses luar via router: :2180 -> :80, :21443 -> :443 (lihat infra/Caddyfile).
+  caddy:
+    image: caddy:2-alpine
+    container_name: magnoo-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - magnoo-caddy-data:/data
+      - magnoo-caddy-config:/config
+    depends_on:
+      web:
+        condition: service_started
+
 volumes:
   magnoo-postgres-data:
+  magnoo-caddy-data:
+  magnoo-caddy-config:

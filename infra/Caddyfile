@@ -1,0 +1,27 @@
+# Magnoo — reverse proxy publik (Caddy).
+# Diakses dari luar lewat router:
+#   http://203.175.127.254:2180   -> :80  (HTTP)
+#   https://203.175.127.254:21443 -> :443 (HTTPS, sertifikat internal/self-signed dulu)
+# Target hulu = service `web` (Next.js) di jaringan compose, port 3001.
+# API (3000) TIDAK diekspos — dipanggil internal oleh web.
+
+{
+	# Port eksternal non-standar (2180/21443) -> matikan auto-redirect 80->443
+	# supaya Caddy tidak melempar browser ke port yang salah.
+	auto_https disable_redirects
+	# Akses via IP mentah tidak mengirim SNI -> tetapkan cert default untuk IP publik.
+	default_sni 203.175.127.254
+}
+
+# HTTP — via 203.175.127.254:2180. Catch-all semua host di port 80.
+http://:80 {
+	reverse_proxy web:3001
+}
+
+# HTTPS — via 203.175.127.254:21443.
+# Cert diterbitkan CA internal Caddy untuk IP publik (self-signed; browser warning wajar).
+# Saat domain siap: tambah blok `https://nama.domain { tls { dns <provider> <token> } ... }`.
+https://203.175.127.254 {
+	tls internal
+	reverse_proxy web:3001
+}
