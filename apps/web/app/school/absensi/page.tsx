@@ -1,6 +1,8 @@
 import type { SchoolAttendanceSummary } from "@magnoo/shared";
 import { apiFetch } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export const dynamic = "force-dynamic";
 
@@ -46,19 +48,9 @@ export default async function AbsensiPage({
         <form method="get" className="flex items-end gap-2">
           <label className="text-sm">
             <span className="mb-1 block text-muted-foreground">Tanggal</span>
-            <input
-              type="date"
-              name="date"
-              defaultValue={date}
-              className="rounded-md border bg-background px-3 py-2 text-sm"
-            />
+            <Input type="date" name="date" defaultValue={date} className="w-auto" />
           </label>
-          <button
-            type="submit"
-            className="rounded-md bg-[#1656C9] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-          >
-            Lihat
-          </button>
+          <Button type="submit">Lihat</Button>
         </form>
       </div>
 
