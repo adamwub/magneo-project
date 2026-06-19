@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { AuthModule } from "../auth/auth.module";
+import { NotificationModule } from "../notification/notification.module";
 import { AttendanceController } from "./attendance.controller";
 import { QrTokenService } from "./qr-token.service";
 import { AttendanceService } from "./attendance.service";
@@ -16,7 +17,7 @@ import { AttendanceReadService } from "./attendance-read.service";
  * QrTokenService di-export agar modul check-in (2d) bisa memvalidasi token.
  */
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, NotificationModule],
   controllers: [AttendanceController],
   providers: [QrTokenService, AttendanceService, DailyStatusService, CorrectionsService, AttendanceReadService],
   exports: [QrTokenService, AttendanceService, DailyStatusService],

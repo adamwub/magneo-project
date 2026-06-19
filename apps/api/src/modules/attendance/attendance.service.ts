@@ -11,6 +11,7 @@ import { apiError } from "../../common/api-error";
 import { REDIS_CONNECTION_TOKEN } from "../../queue/queue.constants";
 import { QrTokenService } from "./qr-token.service";
 import { DailyStatusService } from "./daily-status.service";
+import { NotificationService } from "../notification/notification.service";
 import { isWithinRadius, isIpInAnyCidr, type GeoPoint } from "./location";
 import { schoolLocalTime, presentOrLate } from "./school-time";
 
@@ -38,6 +39,7 @@ export class AttendanceService {
     private readonly prisma: PrismaService,
     private readonly qr: QrTokenService,
     private readonly daily: DailyStatusService,
+    private readonly notif: NotificationService,
     @Inject(REDIS_CONNECTION_TOKEN) private readonly redis: Redis,
   ) {}
 
@@ -128,6 +130,8 @@ export class AttendanceService {
 
     // Materialisasi status harian tiap event masuk (BAGIAN 10.3).
     await this.daily.recompute(studentUserId, schoolId, local.date);
+    // Notif ke ortu (DoD <60 dtk). Stub bila Firebase belum ada — tetap tercatat di NotificationLog.
+    await this.notif.notifyCheckin(studentUserId, status, local.date);
     return this.toDto(event);
   }
 

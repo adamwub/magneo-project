@@ -9,9 +9,10 @@
 -----
 
 ## Sedang dikerjakan
-- **Fase 2** (mode otonom). Berikutnya: **2l** tampilan web sekolah / **2h** push FCM (nunggu Firebase). Backend inti Fase 2 sudah lengkap.
+- **Fase 2** (mode otonom). Berikutnya: **2l** tampilan web sekolah. Notif sudah siap (tinggal nyalakan saat Firebase masuk).
 
 ## Selesai (terbaru di atas)
+- **2026-06-19** — Fase 2 **2h-pondasi**: mesin notifikasi siap (dedup, tanpa data pribadi anak, nyambung ke check-in). Kirim ke HP nyala otomatis begitu Firebase dipasang. 173 tes api lulus, audit aman. ✅
 - **2026-06-19** — Fase 2 **2k**: chat ortu↔wali kelas — aman, tercatat, tanpa siswa. Backend inti Fase 2 (absen, izin, pengumuman, chat) lengkap. 168 tes api lulus, audit aman. ✅
 - **2026-06-19** — Fase 2 **2j**: pengumuman sekolah/kelas/angkatan/ortu — kontrol siapa boleh kirim ke siapa, bisa ditarik 15 menit. 160 tes api lulus, audit security aman. ✅
 - **2026-06-19** — Fase 2 **2i**: izin digital — siswa/ortu ajukan, wali kelas/admin setujui, izin disetujui otomatis ubah status absen. 152 tes api lulus, audit security aman. ✅

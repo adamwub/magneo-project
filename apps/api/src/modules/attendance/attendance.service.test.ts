@@ -17,9 +17,10 @@ function setup(settings: Record<string, unknown>) {
   };
   const qr = { validateToken: vi.fn(async () => 42) }; // token valid, step 42
   const daily = { recompute: vi.fn(async () => ({ finalStatus: "PRESENT", firstInAt: null, lastOutAt: null })) };
+  const notif = { notifyCheckin: vi.fn(async () => undefined) };
   const redis = { set: vi.fn(async () => "OK") }; // anti-replay: berhasil ambil kunci
-  const svc = new AttendanceService(prisma as any, qr as any, daily as any, redis as any);
-  return { svc, prisma, qr, daily, redis };
+  const svc = new AttendanceService(prisma as any, qr as any, daily as any, notif as any, redis as any);
+  return { svc, prisma, qr, daily, notif, redis };
 }
 
 const GEO_SETTINGS = { geo: SCHOOL_GEO }; // qr_geo_radius_m & late_cutoff dari default
