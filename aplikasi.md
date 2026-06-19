@@ -1,6 +1,7 @@
-# MAGNOO — RENCANA PEMBANGUNAN APLIKASI (BUILD SPEC v1.3)
+# MAGNOO — RENCANA PEMBANGUNAN APLIKASI (BUILD SPEC v1.4)
 
 > **CATATAN REVISI**
+> - **v1.4 — 19 Juni 2026**: Integrasi **roadmap engagement/karier/wellness** dari `docs/refs/konsep-engagement-karier.md` (disetujui owner). Ditambah **BAGIAN 12B — Adendum Roadmap Engagement/Karier/Wellness** yang memformalkan ARAH 10 fitur (F1 Open Class, F2 Skill Passport, F3 Ekonomi Poin, F4 Ruang Ilmu Guru, F5 pengumuman guru→ortu, F6 wellness dewasa, F7 dashboard kepsek, F8 prestasi terverifikasi, F9 profil guru, F10 reminder acara) + 5 ADR-baru placeholder (A–E), masing-masing dipetakan ke fase rumah, guardrail kunci, dan status buildable/gated. **Fase 0–8, BAGIAN 12A, dan ADR-001..008 TIDAK berubah.** Item ber-gerbang (F4-tahap2 uang, F2 showcase siswa-aktif, F6 kesehatan/telemedicine, F7) tetap tertahan sampai ADR + kajian hukum + persetujuan owner; **F7 wajib direkonsiliasi dengan guardrail 13.6 lebih dulu.** Ini roadmap (penambah arah), bukan scope baru yang langsung dibangun.
 > - **v1.3 — 19 Juni 2026**: **Tambal celah Fase 2** (audit `magnoo-architect`, detail di `docs/refs/fase2-grounding.md`). Ditambah **BAGIAN 12A — Adendum Spec Fase 2 (mengikat)** yang melengkapi 3 BLOCKER + 2 celah ringan: koordinat+CIDR WiFi sekolah di `School.settings` (A-1), model `DeviceToken` + endpoint `/me/devices` untuk FCM (B-1), pemutus izin = wali kelas + SCHOOL_ADMIN di RBAC (C-2), mekanisme token QR TOTP server-side + anti-replay/anti-foto (A-2/A-3), state machine izin (C-1), plus pengetatan notif/izin/pengumuman & 7 kode error baru. ADR & fase 0–8 tidak berubah; ini klarifikasi build, bukan scope baru.
 > - **v1.2 — 19 Juni 2026**: Sinkron dari **Big Blueprint v2** (`01-Strategi/magnoo-big-blueprint-v2.html`). Ditambah: subbagian **1.1 Visi Jangka Panjang (5 Lapisan)** sebagai konteks arah produk — *tanpa mengubah fase teknis 0–8* (build saat ini tetap fokus app sekolah). Ditambah **guardrail 13.13 (Tembok Pemisah Data Anak)**: produk iklan/OOH/data-marketplace lapisan 2–5 hanya boleh memakai data agregat/anonim & sumber non-anak/non-sekolah; data anak tidak pernah menjadi barang dagangan. Lapisan bisnis 2–5 (OOH, platform OOH, programmatic, data marketplace) BELUM menjadi fase buildable — perlu ADR + kajian hukum (PDP/PSE) tersendiri sebelum dibangun. Fase 0–8 & semua ADR tidak berubah.
 > - **v1.1 — 17 Juni 2026**: Modul **Startup Center (Fase 8)** diperluas dari kerangka dasar menjadi modul penuh — 6 model data baru (IdeaSupport, IdeaComment, Competition, CompetitionEntry, MentorProfile, MentorSession) + StartupIdea diperluas, ~30 endpoint API, layar mobile (tab Startup untuk Siswa & Guru, tab Mentor untuk Alumni), dashboard web Sekolah & HQ, aturan bisnis 10.12, ThreadType `STARTUP_ROOM`, dan 2 cron job baru. Fase 1–7 tidak berubah.
@@ -1057,6 +1058,48 @@ GET  /startup/demoday/:id/ideas                       (ide yang demoDay=true, ur
 - **Thread Fase 2 = HANYA `PARENT_HOMEROOM`** (ortu↔wali kelas, ortu mulai dari `templateKey`). `CLASS_ROOM`/`APPLICATION` BUKAN Fase 2. Jangan buat DM siswa↔siswa / luar→siswa (guardrail 13.5).
 - **Kode error baru** (tambahkan ke `packages/shared/src/errors.ts`): `ATTENDANCE_INVALID_TOKEN, ATTENDANCE_OUT_OF_AREA, ATTENDANCE_LOCATION_REQUIRED, PERMIT_DUPLICATE, PERMIT_INVALID_TRANSITION, ANNOUNCEMENT_RETRACT_EXPIRED, ANNOUNCEMENT_SCOPE_FORBIDDEN`.
 - **Pakai infrastruktur existing:** RBAC `@Roles`/`@Scope` & `AuditService.write()` (append-only) yang sudah ada — jangan tulis ulang authz.
+
+---
+
+## BAGIAN 12B — ADENDUM ROADMAP ENGAGEMENT/KARIER/WELLNESS (v1.4)
+
+> **SIFAT BAGIAN INI = ROADMAP (memformalkan ARAH produk), BUKAN scope buildable baru.**
+> Fase 0–8 (BAGIAN 12), BAGIAN 12A (mengikat, Fase 2), dan ADR-001..008 **TIDAK BERUBAH**
+> oleh bagian ini. Semua item ber-gerbang (gated) **TETAP TERTAHAN** sampai lengkap:
+> **ADR baru diratifikasi + kajian hukum (PDP/PSE, dan untuk uang: PJP/pajak; untuk kesehatan:
+> Permenkes telemedicine) + persetujuan eksplisit owner.** Detail rancangan, alasan, dan catatan
+> hukum ada di `docs/refs/konsep-engagement-karier.md` (sumber; bukan konstitusi). Penomoran
+> ADR di sini memakai label sementara **ADR-baru-A..E**; nomor final ditetapkan saat ratifikasi.
+>
+> **Catatan tabrakan yang WAJIB diselesaikan owner sebelum F7 dibangun:** F7 berbenturan dengan
+> **guardrail 13.6** (larang dashboard kinerja/ranking/pemakaian per guru yang diakses kepsek).
+> 12B TIDAK melonggarkan 13.6. F7 hanya boleh dibangun setelah owner secara eksplisit
+> merekonsiliasi/mengamandemen 13.6 bersama ADR-baru-E.
+
+### Peta fitur F1–F10
+
+| Fitur | Apa (1 baris) | Rumah fase | Guardrail kunci | Status |
+|---|---|---|---|---|
+| **F1 Open Class / Consult** | Forum tanya-jawab per mapel + sesi konsultasi 1-on-1 yang privat-dari-teman tapi terang-ke-sistem, semua tercatat & auditable. | Ekstensi `comms` (ThreadType `OPEN_CLASS`/`CONSULT`), setelah Fase 2 inti. | 13.5 (tak ada chat gelap), 13.1/13.2 (PII), 13.9 (audit append-only); perkuat via ADR-baru-C. | gated-ADR (C) |
+| **F2 Skill Passport → Profil Karier** | Siswa kumpulkan skill, guru verifikasi jadi badge; "mekar" jadi profil yang dilirik perusahaan. | Badge/verifikasi = Fase 5; showcase/rekrutmen (alumni) = Fase 7. | ADR-005 (identitas anak di Box; cloud hanya non-identitas/agregat), 13.13, PDP. | Fase 5 (badge non-PII): buildable saat fasenya. Showcase alumni: Fase 7. **Showcase siswa-aktif & papan bernama: gated-ADR+hukum (B)** |
+| **F3 Ekonomi Poin + 3 lapisan engagement** | Poin dua-arah (siswa & guru): hadiah instan+streak+reward, status/badge, sosial/pengakuan; poin hanya dari aktivitas belajar terukur. | Fase 5 (Gamifikasi), reuse mekanisme 10.5. | 10.5 anti-fraud (endap 7 hari, FIFO, flag), 13.9 (PointLedger append-only). Poin BUKAN dari "ngobrol/curhat". | buildable-now (saat Fase 5 tiba) |
+| **F4 Ruang Ilmu Guru (sidejob guru)** | Guru bikin materi/sesi tambahan & dapat imbalan. | Tahap-1 (imbalan POIN) = Fase 5; Tahap-2 (uang nyata) = fase berbadan-hukum. | Anti konflik kepentingan; 13.9; (tahap-2) hukum konsumen + pajak + PJP. | Tahap-1: buildable-now (Fase 5). **Tahap-2 (uang nyata): gated-ADR+hukum (A) — BELUM buildable** |
+| **F5 Pengumuman Guru → Ortu kelas** | Wali kelas kirim pengumuman ke ortu kelas yang diampu (bukan se-sekolah). | Fase 2 (penyesuaian 12A.4). | 13.5 (terang & tercatat), scope diikat `schoolId`+`classId`. | **Amandemen kecil 12A.4 — perlu persetujuan terpisah owner sebelum diterapkan ke kode Fase 2** (12B hanya mencatat arah; tidak mengubah 12A) |
+| **F6 Wellness/Kesehatan Dewasa + AI** | Guru/ortu (DEWASA, bukan siswa) input data kesehatan → AI insight gaya hidup + disclaimer; ke depan koneksi dokter. | Modul wellness dekat Fase 4 (AI); koneksi dokter = fase kemitraan. | ADR-007 (AI via proxy), data kesehatan = kategori khusus PDP (consent + enkripsi at-rest), privat dari sekolah; AI = wellness, BUKAN diagnosis. **Siswa di luar scope.** | Tahap-1: **gated-ADR (D)**. **Tahap-2 (koneksi dokter): gated-ADR+hukum (D, Permenkes telemedicine, mitra berlisensi) — BELUM buildable** |
+| **F7 Dashboard Kepsek (pemetaan guru↔siswa by AI)** | Analisa AI advisory untuk kepsek: tren kehadiran, papan aktivitas guru, EWS, pemetaan guru↔siswa. | Fase 8 (Analitik) + AI (Fase 4). | **BENTROK 13.6** (dashboard kinerja/pemakaian per guru); ADR-005 (ID/agregat, tanpa nama siswa); ADR-baru-E (AI = decision-support, explainable, bukan auto-skor punitif). | **gated-ADR+rekonsiliasi-13.6 (E) — BELUM buildable.** Wajib owner menyelesaikan tabrakan 13.6 lebih dulu |
+| **F8 Prestasi Terverifikasi** | Siswa/guru catat prestasi → diverifikasi → catatan terpercaya; kepsek lihat AGREGAT. | Catatan+verifikasi = Fase 5 (mekanisme badge F2); agregat dashboard = Fase 8/F7. | ADR-005, 13.13. Internal/agregat = aman; papan publik BERNAMA = consent ortu. | Catatan+agregat: buildable saat fasenya. **Showcase publik-bernama: gated-hukum (consent ortu, B)** |
+| **F9 Profil Guru untuk Ortu** | Ortu lihat profil profesional guru (mapel, kelas, kualifikasi, jadwal Open Class) — TANPA kontak pribadi. | `common/profile` + `comms`, dekat Fase 2. | Eksepsi dewasa ADR-005 (data profesional guru boleh di cloud); kontak pribadi disembunyikan; komunikasi via kanal tercatat (13.5). | buildable-now (saat fasenya tiba) |
+| **F10 Pengingat Acara (Reminder)** | Pengumuman ber-`eventStart` memicu notif pengingat (default H-1 sore, jam wajar; maks 2/pengumuman). | Ekstensi Announcement + Notification (Fase 2); cron penyapu pola recompute. | Payload tanpa PII sensitif (judul saja); dedup; hormati audiens/scope pengumuman. | buildable-now (penjadwalan); pengiriman menunggu pipeline FCM (2g/2h) |
+
+### ADR baru (label sementara — diratifikasi saat fitur matang; nomor final menyusul)
+
+- **ADR-baru-A — Model monetisasi guru:** mulai dari ekonomi poin internal; uang-nyata hanya via PJP berlisensi + badan hukum + pajak + pemisahan peran (guru penilai ≠ guru penjual). Memicu 13.13.
+- **ADR-baru-B — Penempatan & paparan data skill anak:** badge/identitas siswa di Box (ADR-005); showcase = alumni dewasa atau consent ortu; data anak tak pernah jadi produk. Memperkuat ADR-005 & 13.13.
+- **ADR-baru-C — Model komunikasi terang (Open Class/Consult):** semua pesan tercatat & auditable; tak ada kanal tersembunyi guru↔siswa. Memperkuat 13.5.
+- **ADR-baru-D — Data kesehatan & wellness AI (F6):** subjek dewasa saja (siswa di luar scope); consent eksplisit; data terenkripsi & privat dari sekolah; AI = wellness bukan diagnosis (disclaimer); koneksi dokter hanya via mitra telemedicine berlisensi (Permenkes). Memicu 13.13.
+- **ADR-baru-E — AI advisory untuk evaluasi guru (F7):** AI = decision-support, bukan auto-skor punitif; explainable; kepsek yang memutuskan; transparan ke guru; data internal/agregat (ADR-005). **Wajib direkonsiliasi dengan guardrail 13.6 oleh owner sebelum F7 dibangun.**
+
+> **Penegasan akhir:** tidak ada satu pun item di BAGIAN 12B yang boleh dibangun hanya karena tercantum di sini. Status "buildable" berarti boleh masuk antrean **saat fasenya tiba** dan tetap tunduk DoD + QA gate. Status "gated" berarti **berhenti** sampai gerbang ADR + (bila ditandai) hukum + owner terpenuhi. Bila pola umum/library bertabrakan dengan ADR atau guardrail, **konstitusi menang**.
 
 ---
 

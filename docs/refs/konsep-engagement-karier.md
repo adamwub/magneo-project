@@ -118,6 +118,10 @@ yang bikin dilirik perusahaan; dan **siswa + guru lebih sering buka app & senang
   - **Alarm dini (EWS):** kelas dengan kehadiran turun / banyak ABSENT_NO_INFO → kepsek tindak lanjut.
     (Enum `EwsStatus` sudah ada di skema — nyambung.)
 - **Rumah fase:** **Fase 8 (Analitik)** + modul **AI (Fase 4)**.
+- **⚠️ TABRAKAN GUARDRAIL (temuan arsitek):** F7 berbenturan dengan **guardrail 13.6** yang melarang
+  *"dashboard kinerja/ranking/laporan pemakaian per guru yang diakses kepsek."* F7 **BELUM buildable**
+  sampai **owner secara eksplisit merekonsiliasi/mengamandemen 13.6** (bersama ADR-baru-E). Jangan
+  dilonggarkan diam-diam. Keputusan owner.
 
 ### F8. Prestasi Terverifikasi (kebanggaan sekolah)
 - **Apa:** siswa/guru catat prestasi (lomba, juara, sertifikasi) → **diverifikasi** (guru/admin) →
