@@ -55,6 +55,8 @@ services:
       BOX_PAIRING_PEPPER: dev-only-box-pairing-pepper-change-me
       # Fase 1f — pepper penyamaran NIS (BAGIAN 16). Dev only.
       NIS_PSEUDONYM_PEPPER: dev-only-nis-pseudonym-pepper-change-me
+      # Fase 2 (2c) — kunci AES-256-GCM secret TOTP QR (base64 32 byte). Dev only; PROD via vault.
+      QR_TOTP_ENC_KEY: mUB64L3a5bng8VbZ2fyF+EQ3FdVaqGGu/P8ZGEvJPgk=
     ports:
       - "3000:3000"
     depends_on:

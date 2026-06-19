@@ -277,6 +277,10 @@ model School {
   // username siswa = HMAC(kunci = sha256(nisKey + NIS_PSEUDONYM_PEPPER), NIS).
   // Butuh DUA rahasia (kunci di DB + pepper di env); NIS asli tak pernah di cloud (ADR-005).
   nisKey    String?
+  // Secret TOTP absensi QR per sekolah, TERENKRIPSI AES-256-GCM (Fase 2, 12A.1).
+  // Dibuat acak saat token QR pertama diminta. Key enkripsi di env (QR_TOTP_ENC_KEY).
+  // TIDAK PERNAH dikirim ke klien; tak diekspor di schoolSchema/getSettings.
+  qrTotpSecretEnc String?
   boxes     Device[]
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt

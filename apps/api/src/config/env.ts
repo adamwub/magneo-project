@@ -36,6 +36,11 @@ export const envSchema = z.object({
   // Folder penyimpanan laporan impor (CSV error & kredensial sekali-unduh).
   // Default = subfolder di direktori temp sistem.
   IMPORT_STORAGE_DIR: z.string().optional(),
+
+  // Wajib sejak Fase 2 (2c): kunci AES-256-GCM (base64 dari 32 byte = 44 char) untuk
+  // mengenkripsi secret TOTP absensi QR per sekolah di DB (12A.1, BAGIAN 14). Di produksi
+  // WAJIB dari vault/secret manager, acak, tak pernah di repo.
+  QR_TOTP_ENC_KEY: z.string().min(44),
 });
 
 export type Env = z.infer<typeof envSchema>;

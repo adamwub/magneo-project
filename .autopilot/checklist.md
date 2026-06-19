@@ -9,9 +9,13 @@
 -----
 
 ## Sedang dikerjakan
-- _(belum mulai — menunggu iterasi pertama)_
+- **Fase 2** (mode otonom). Berikutnya: **2d** — siswa scan QR untuk absen (`POST /attendance/qr/checkin`).
 
 ## Selesai (terbaru di atas)
+- **2026-06-19** — Fase 2 **2c**: token QR aman — tiap sekolah punya kunci rahasia tersimpan terenkripsi, layar gerbang tampilkan token 8-digit ganti tiap 30 dtk. (Audit security: aman.) ✅
+- **2026-06-19** — Fase 2 **2b**: cek lokasi absen (GPS radius sekolah ATAU WiFi sekolah). Security nahan 1 bug (IP bisa dipalsukan) → sudah kufix. ✅
+- **2026-06-19** — Fase 2 **2a**: pondasi data (token HP ortu, kode error, skema izin/pengumuman). ✅
+- **2026-06-19** — Rebrand **Magnoo → Magneo** (teks brand) + backup ke GitHub (via SSH). ✅
 - **2026-06-19** — Tambah 3 agen mutu: `magnoo-security` (auditor keamanan/guardrail), `magnoo-tester` (test engineer), `magnoo-simplifier` (ringan & anti-spaghetti). Dijahit ke RUNBOOK. ✅
 - **2026-06-19** — Tambal celah Fase 2 → `aplikasi.md` **v1.3** (BAGIAN 12A adendum): 3 BLOCKER + 2 ringan ditambal (lokasi sekolah, DeviceToken FCM, pemutus izin, token QR, state izin). Spec Fase 2 siap dibangun lurus. ✅
 - **2026-06-19** — Pasang 3 agen spesialis: `magnoo-architect` (penjaga spec+riset), `magnoo-funcqa` (QA fungsi), `magnoo-visualqa` (QA tema clay×glass). Tema dikunci di `docs/refs/design-system.md`. ✅

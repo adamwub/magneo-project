@@ -5,7 +5,7 @@
  *   (a) GPS klien dalam `qr_geo_radius_m` meter dari koordinat sekolah (`geo`), ATAU
  *   (b) IP klien termasuk salah satu `wifi_cidrs` (jaringan WiFi sekolah).
  *
- * File ini HANYA fungsi murni (tanpa I/O) — penegakan di endpoint check-in (potongan 2c).
+ * File ini HANYA fungsi murni (tanpa I/O) — penegakan di endpoint check-in (potongan 2d).
  */
 
 export interface GeoPoint {

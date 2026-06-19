@@ -20,7 +20,7 @@
 - **⚠️ KONSTITUSI DIPERBARUI (2026-06-19): `aplikasi.md` naik v1.2 → v1.3 — TAMBAL CELAH FASE 2.** Hasil audit agen `magnoo-architect` (3 BLOCKER + 2 ringan). Ditambah **BAGIAN 12A — Adendum Spec Fase 2 (mengikat)**: koordinat+CIDR WiFi sekolah (A-1), model `DeviceToken`+`/me/devices` utk FCM (B-1), pemutus izin=wali kelas+SCHOOL_ADMIN (C-2), token QR TOTP server-side + anti-replay/foto (A-2/3), state machine izin (C-1), pengetatan notif/izin/pengumuman + 7 kode error baru. Detail & sumber: `docs/refs/fase2-grounding.md`. Backup: `_backup/aplikasi.SEBELUM-tambalfase2.*.md`. **Spec Fase 2 kini "siap dibangun lurus".** ADR & fase 0–8 tidak berubah.
 - **⚠️ KONSTITUSI DIPERBARUI (2026-06-19): `aplikasi.md` naik v1.1 → v1.2.** Sinkron dari **Big Blueprint v2** (dokumen STRATEGI, disimpan di `01-Strategi/magnoo-big-blueprint-v2.html`). **Hanya 2 tambahan; FASE TEKNIS 0–8 & semua ADR TIDAK BERUBAH:** (1) subbagian **1.1 Visi Jangka Panjang (5 Lapisan)** — konteks arah bisnis (Sekolah → OOH/Layar → Platform OOH → Programmatic → Data Marketplace); lapisan 2–5 BELUM buildable (butuh ADR + kajian hukum tersendiri). (2) **Guardrail 13.13 — Tembok Pemisah Data Anak**: data anak/sekolah tak pernah jadi produk iklan/OOH/data-marketplace; lapisan 2–5 hanya boleh data agregat/anonim & sumber non-anak. Backup pra-sinkron: `_backup/aplikasi.SEBELUM-sinkron-v2.*.md`. **Tidak berdampak ke Fase 2.**
 - **⚠️ KONSTITUSI DIPERBARUI (2026-06-17): `aplikasi.md` naik v1.0 → v1.1.** Pemilik mengirim revisi via Telegram bot. **Satu-satunya perubahan isi:** modul **Startup Center (Fase 8)** diperluas dari kerangka dasar jadi modul penuh — 6 model data baru (IdeaSupport, IdeaComment, Competition, CompetitionEntry, MentorProfile, MentorSession) + StartupIdea diperluas, ~30 endpoint, layar mobile (tab Startup Siswa & Guru, tab Mentor Alumni), dashboard web Sekolah & HQ, aturan bisnis **10.12**, ThreadType `STARTUP_ROOM`, 2 cron job baru. **Fase 0–7 TIDAK berubah** → tidak berdampak ke pekerjaan saat ini (kita di ambang Fase 2). Versi lama dibackup di `_backup/aplikasi.20260617-083507.md`. Catatan revisi ada di header `aplikasi.md`.
-- **Posisi sekarang:** Fase 0 ✅, **🎉 FASE 1 TUNTAS (1a–1k ✅)**. **FASE 2 berjalan (mode otonom) — 2a ✅ 2b ✅.** 2a=pondasi data (DeviceToken+migrasi, 7 error code, skema shared). 2b=verifikasi lokasi (geofence Haversine + IP-in-CIDR + trust proxy=1; default radius 150 per 12A.1). **Berikutnya: 2c** (token QR server-side: secret TOTP terenkripsi AES-256-GCM + `GET /attendance/qr/current`).
+- **Posisi sekarang:** Fase 0 ✅, **🎉 FASE 1 TUNTAS (1a–1k ✅)**. **FASE 2 berjalan (mode otonom) — 2a ✅ 2b ✅ 2c ✅.** 2a=pondasi data. 2b=verifikasi lokasi (geofence+IP-CIDR, trust proxy=1, radius 150). 2c=token QR server-side (secret TOTP per-sekolah terenkripsi AES-256-GCM, period=30/digits=8/SHA256, `GET /attendance/qr/current`). **Berikutnya: 2d** (`POST /attendance/qr/checkin` — rule 10.2 inti: token+lokasi+anti-replay, test-first).
 - **Sedang menuju:** **FASE 2** (2a ✅ → 2b berikutnya) — Attendance (QR), Notifikasi (FCM nyata; WA stub), Izin, Pengumuman. Rencana potongan 2a–2n disusun arsitek (lihat entri "Potongan 2a"). DoD Fase 2: scan QR→notif <60dtk, rule 10.2–10.4 ada unit test, QA-4 lulus.
 - **Uji E2E Fase 1:** `pnpm --filter @magnoo/api test:e2e` (`test/e2e/fase1.e2e.ts`) — butuh backend hidup (`PORT=3100`) + Postgres/Redis; OTP dibaca dari log server (`E2E_API_LOG`). 23 cek lulus.
 - **Catatan QA visual:** web diuji via Playwright+Chrome; mobile (Flutter) via `flutter analyze` + 5 widget test + `flutter build web` + screenshot. Server lokal uji: backend `PORT=3100`, web `next start -p 3005`, flutter web `python3 -m http.server 3007` di `build/web`.
@@ -133,6 +133,35 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-19 — Fase 2 / Potongan 2c: Token QR server-side (TOTP terenkripsi)
+
+**Yang dikerjakan:** Mesin token QR absensi yang aman (BAGIAN 10.2 / 12A.1). Tiap sekolah punya "kunci rahasia" TOTP yang **disimpan terenkripsi** di DB dan **tidak pernah** dikirim ke HP siapa pun; layar gerbang cuma menampilkan token 8-digit yang berganti tiap 30 detik via `GET /attendance/qr/current`.
+
+**File dibuat/diubah:**
+- `apps/api/src/common/crypto/aes-gcm.ts` (baru) — enkripsi AES-256-GCM (IV acak 12B ‖ tag 16B ‖ ciphertext), key dari env.
+- `apps/api/src/modules/attendance/totp.ts` (baru) — TOTP HMAC-SHA256, period=30, digits=8, validate window=±1 (12A.1).
+- `apps/api/src/modules/attendance/qr-token.service.ts` (baru) — secret per sekolah (dibuat acak `randomBytes(32)` saat pertama, simpan terenkripsi, anti-balapan); `current()` (token tanpa secret) + `validateToken()` (untuk 2d).
+- `apps/api/src/modules/attendance/attendance.controller.ts` + `attendance.module.ts` (baru) — `GET /attendance/qr/current` (role SCHOOL_ADMIN/TEACHER/PRINCIPAL + scope school).
+- `apps/api/prisma/schema.prisma` (+`School.qrTotpSecretEnc`) + migrasi `20260619052427_school_qr_totp_secret` (ALTER ADD COLUMN nullable — aditif).
+- `apps/api/src/config/env.ts` (+`QR_TOTP_ENC_KEY`); `.env`/`.env.example`/compose diisi key dev.
+- tes: `aes-gcm.test.ts` (6), `totp.test.ts` (6), `qr-token.service.test.ts` (5).
+
+**Keputusan & konflik:** period TOTP — 10.2 (& daftar API) bilang "60 dtk" tapi **12A.1 (mengikat) = `period=30`** → pakai **30** (12A "perjelas 10.2", menang). Endpoint juga mengizinkan **PRINCIPAL** (selain SCHOOL_ADMIN/TEACHER) — read-only token publik, wajar; **flag ke owner** kalau mau dibatasi.
+
+**Bukti & audit:**
+- Test: 17/17 baru (kripto 6 + TOTP 6 + service 5); **full api suite 110/110** (nol regresi); typecheck ✅; migrasi aditif diterapkan; **data Fase 1 utuh** (users=11, schools=1).
+- Audit: arsitek **PASS** (period 30 benar, secret tak ke klien, role wajar). Security **PASS/AMAN** (AES-GCM benar: IV acak per-enkripsi, auth-tag diverifikasi, key 32B tervalidasi; secret tak bocor ke response/log/DTO; RBAC tutup siswa & HQ; nol CRITICAL/HIGH). Simplifier **RAMPING** (nol dependency, pakai node:crypto).
+
+**Utang (non-blocking, dari audit) — kerjakan terpisah/2d:**
+- (MED, housekeeping) dev-secret di `infra/docker-compose.dev.yml` (termasuk `QR_TOTP_ENC_KEY` dev) ke-commit — pola lama (JWT/pepper dev juga). Sebaiknya eksternalkan SEMUA dev-secret ke `infra/.env.dev` (gitignore). PROD wajib via vault (sudah diwajibkan).
+- (LOW) `school.service.listSchools` `findMany` tanpa `select` eksplisit — aman sekarang (toSchoolDto memfilter), tapi tambah `select` biar kolom `qrTotpSecretEnc`/`nisKey` tak mungkin bocor bila DTO berubah.
+- (opsional) `validateTotp` pakai `===`; bisa `timingSafeEqual` (risiko rendah, token publik).
+- **Peringatan 2d (check-in):** anti-replay pakai `(userId,schoolId,step)` cakup semua step window (token valid ~90 dtk); `occurredAt`=waktu server; rate-limit anti brute-force token; PII anak jangan di payload; append-only.
+
+**Status:** Selesai & terbukti. **Berikutnya: 2d** (`POST /attendance/qr/checkin` — rule 10.2 inti: validasi token+lokasi+anti-replay, test-first). Mode otonom.
 
 -----
 

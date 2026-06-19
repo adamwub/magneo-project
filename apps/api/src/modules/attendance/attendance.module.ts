@@ -1,9 +1,20 @@
 import { Module } from "@nestjs/common";
+import { AuthModule } from "../auth/auth.module";
+import { AttendanceController } from "./attendance.controller";
+import { QrTokenService } from "./qr-token.service";
 
 /**
- * Modul attendance (ADR-003 modular monolith). Stub Fase 0c — diisi pada fasenya.
- * Aturan boundary: antar-modul hanya lewat service interface yang di-export,
- * dilarang import repository/entity modul lain langsung.
+ * Modul attendance (ADR-003 modular monolith).
+ * Fase 2 — 2c: token QR server-side (secret TOTP terenkripsi per sekolah).
+ * Check-in siswa, status harian, koreksi menyusul (2d–2f).
+ *
+ * Mengimpor AuthModule untuk JwtAuthGuard. PrismaModule/RbacModule global (app.module).
+ * QrTokenService di-export agar modul check-in (2d) bisa memvalidasi token.
  */
-@Module({})
+@Module({
+  imports: [AuthModule],
+  controllers: [AttendanceController],
+  providers: [QrTokenService],
+  exports: [QrTokenService],
+})
 export class AttendanceModule {}
