@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { Session } from "@/lib/session";
 import { SidebarNav, type NavItem } from "@/components/sidebar-nav";
+import { MobileNav } from "@/components/mobile-nav";
 import { LogoutButton } from "@/components/logout-button";
 
 const ROLE_LABEL: Record<string, string> = {
@@ -23,8 +24,8 @@ export function DashboardShell({
   children: ReactNode;
 }) {
   return (
-    <div className="grid min-h-screen grid-cols-[240px_1fr]">
-      <aside className="clay-panel flex flex-col gap-6 p-4">
+    <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[240px_1fr]">
+      <aside className="clay-panel hidden flex-col gap-6 p-4 lg:flex">
         <div className="px-2">
           <div className="text-xl font-extrabold tracking-tight text-primary">Magneo</div>
           <div className="text-xs text-muted-foreground">{area}</div>
@@ -32,9 +33,12 @@ export function DashboardShell({
         <SidebarNav items={items} />
       </aside>
       <div className="flex flex-col">
-        <header className="clay-panel sticky top-0 z-10 flex h-14 items-center justify-between px-6">
-          <div className="text-sm text-muted-foreground">
-            {ROLE_LABEL[session.role] ?? session.role}
+        <header className="clay-panel sticky top-0 z-10 flex h-14 items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-2">
+            <MobileNav items={items} area={area} />
+            <div className="text-sm text-muted-foreground">
+              {ROLE_LABEL[session.role] ?? session.role}
+            </div>
           </div>
           <LogoutButton />
         </header>
