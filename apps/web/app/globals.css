@@ -68,7 +68,7 @@ body {
   /* Field clay cekung (input). */
   .clay-input {
     border: none;
-    border-radius: 1.1rem;
+    border-radius: 1.25rem;
     background-color: hsl(var(--background));
     box-shadow: var(--clay-inset);
   }
