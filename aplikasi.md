@@ -1,6 +1,7 @@
-# MAGNOO — RENCANA PEMBANGUNAN APLIKASI (BUILD SPEC v1.2)
+# MAGNOO — RENCANA PEMBANGUNAN APLIKASI (BUILD SPEC v1.3)
 
 > **CATATAN REVISI**
+> - **v1.3 — 19 Juni 2026**: **Tambal celah Fase 2** (audit `magnoo-architect`, detail di `docs/refs/fase2-grounding.md`). Ditambah **BAGIAN 12A — Adendum Spec Fase 2 (mengikat)** yang melengkapi 3 BLOCKER + 2 celah ringan: koordinat+CIDR WiFi sekolah di `School.settings` (A-1), model `DeviceToken` + endpoint `/me/devices` untuk FCM (B-1), pemutus izin = wali kelas + SCHOOL_ADMIN di RBAC (C-2), mekanisme token QR TOTP server-side + anti-replay/anti-foto (A-2/A-3), state machine izin (C-1), plus pengetatan notif/izin/pengumuman & 7 kode error baru. ADR & fase 0–8 tidak berubah; ini klarifikasi build, bukan scope baru.
 > - **v1.2 — 19 Juni 2026**: Sinkron dari **Big Blueprint v2** (`01-Strategi/magnoo-big-blueprint-v2.html`). Ditambah: subbagian **1.1 Visi Jangka Panjang (5 Lapisan)** sebagai konteks arah produk — *tanpa mengubah fase teknis 0–8* (build saat ini tetap fokus app sekolah). Ditambah **guardrail 13.13 (Tembok Pemisah Data Anak)**: produk iklan/OOH/data-marketplace lapisan 2–5 hanya boleh memakai data agregat/anonim & sumber non-anak/non-sekolah; data anak tidak pernah menjadi barang dagangan. Lapisan bisnis 2–5 (OOH, platform OOH, programmatic, data marketplace) BELUM menjadi fase buildable — perlu ADR + kajian hukum (PDP/PSE) tersendiri sebelum dibangun. Fase 0–8 & semua ADR tidak berubah.
 > - **v1.1 — 17 Juni 2026**: Modul **Startup Center (Fase 8)** diperluas dari kerangka dasar menjadi modul penuh — 6 model data baru (IdeaSupport, IdeaComment, Competition, CompetitionEntry, MentorProfile, MentorSession) + StartupIdea diperluas, ~30 endpoint API, layar mobile (tab Startup untuk Siswa & Guru, tab Mentor untuk Alumni), dashboard web Sekolah & HQ, aturan bisnis 10.12, ThreadType `STARTUP_ROOM`, dan 2 cron job baru. Fase 1–7 tidak berubah.
 > - **v1.0 — Juni 2026**: Versi awal.
@@ -1018,6 +1019,44 @@ GET  /startup/demoday/:id/ideas                       (ide yang demoDay=true, ur
 - **Startup Center** (modul penuh): module `startup` dengan semua model baru (StartupIdea, IdeaSupport, IdeaComment, Competition, CompetitionEntry, MentorProfile, MentorSession), seluruh endpoint, layar mobile (student tab Startup + teacher tab Startup + alumni tab Mentor), web sekolah (kelola ide + lomba + Demo Day) + HQ (kelola mentor + lomba lintas kota + laporan CSR), aturan bisnis 10.12, cron job `startup-demoday-reminder` (H-7 & H-1 sebelum Demo Day → notif ke peserta), dan cron `startup-competition-auto-close` (menutup lomba saat submissionEnd lewat).
 - **Thread baru** ditambahkan ke `ThreadType`: `STARTUP_ROOM` — menggunakan infrastruktur thread yang ada, bukan dibangun ulang.
 - **DoD**: alarm engagement berfungsi pada data seed; query Youth Pulse n<50 ditolak; siswa bisa submit ide → didukung siswa lain → ikut lomba → diberi mentor → sesi terjadwal → Demo Day — seluruh alur diuji E2E; laporan CSR ter-generate dengan data seed.
+
+---
+
+## BAGIAN 12A — ADENDUM SPEC FASE 2 (v1.3 — MENGIKAT)
+
+> Penambal celah hasil audit arsitek (detail & sumber di `docs/refs/fase2-grounding.md`). Bagian ini **mengikat** dan melengkapi BAGIAN 6/7/8/10 untuk Fase 2. Tidak mengubah ADR. Tujuan: pembangun tidak menebak.
+
+### 12A.1 Absensi QR
+- **Lokasi sekolah (lengkapi 6.1/10.1):** `School.settings` WAJIB memuat `geo: {lat,lng}`, `qrGeoRadiusM` (default 150), dan `wifiCidrs: string[]` (daftar CIDR WiFi sekolah). Validasi IP klien pakai `app.set('trust proxy', <hop>)` + `X-Forwarded-For` paling kiri tepercaya. Bila `geo` & `wifiCidrs` kosong → check-in QR ditolak `ATTENDANCE_LOCATION_REQUIRED`.
+- **Token QR (perjelas 10.2):** secret TOTP **per sekolah** disimpan **terenkripsi** (AES-256-GCM, key di vault — BAGIAN 14); **TIDAK PERNAH** dikirim ke klien siswa. Token ditampilkan via `GET /attendance/qr/current` (role gerbang/`SCHOOL_ADMIN`/`TEACHER`), UI rotasi tiap 30 dtk. Param TOTP: `period=30, digits=8, algo=SHA256`. Server `validate(window=1)`; token mengikat `schoolId`.
+- **Validasi lokasi (OR):** LULUS bila GPS dalam `qrGeoRadiusM` dari `geo` **ATAU** IP klien ∈ `wifiCidrs`. Gagal → `ATTENDANCE_OUT_OF_AREA`.
+- **Anti-replay & anti-foto (penuhi QA-4):** tiap `(userId, tokenStep)` sekali pakai — kunci Redis `attreplay:{schoolId}:{userId}:{step}` `SET NX EX 90`. QA-4 dianggap lulus bila aktif: rotasi pendek + geofence/IP + anti-replay per-user + double-event sejenis <5 mnt diabaikan (10.2). (Device-binding = ide untuk dibahas pemilik, BUKAN Fase 2.)
+- **Waktu:** server set `occurredAt=now()` (jangan percaya klien). PRESENT/LATE & `date` dihitung dari `occurredAt` dikonversi ke `School.timezone`. Check-in QR tanpa Idempotency-Key; dedup via aturan double <5 mnt (sukses idempoten "silent").
+
+### 12A.2 Notifikasi (FCM nyata + WA stub)
+- **Model baru `DeviceToken`** (6.2): `{ id, userId→User, token @unique, platform: ANDROID|IOS, lastSeenAt, createdAt, revokedAt? }`. Endpoint: `POST /me/devices {token, platform}` (upsert + set lastSeenAt) & `DELETE /me/devices/:token` (atau saat logout). Bersihkan token >30 hari tak aktif.
+- **Pengiriman:** lewat BullMQ queue `notifications` (pola seperti import worker); job di-enqueue **setelah** event tersimpan. Target `<60 dtk` diukur dari event tercatat s/d FCM API success; catat `enqueuedAt/sentAt` di `NotificationLog`. Retry `attempts:5` backoff eksponensial+jitter; jangan retry error permanen.
+- **Dedup (cegah banjir cron 09:05/16:00):** sebelum kirim, `SET notifsent:{userId}:{templateKey}:{dedupeKey} NX EX 86400` (mis. `dedupeKey=absent:{date}`); plus FCM `collapseKey` per kategori.
+- **Payload:** kombinasi `notification` + `data{type,entityId,deeplink,templateKey,dedupeKey}`; event kritis `android.priority=high`. Teks **dilokalkan di klien** via `templateKey` (jangan kalimat di server). Tanpa PII siswa di payload/log (13.2).
+- **Penerima:** semua `ParentLink.status=ACTIVE` untuk siswa ybs (dedup per ortu).
+- **WA stub:** `interface WaChannel { send(to, templateKey, params) }`; Fase 2 = stub tulis `NotificationLog channel=WA status=QUEUED` + log (tak panggil provider). Fallback WA HANYA bila: user tak punya DeviceToken aktif ATAU FCM `UNREGISTERED` untuk semua token user, DAN `WA_FALLBACK` aktif, DAN kategori kritis.
+
+### 12A.3 Izin (Permit)
+- **State machine (mengikat):** transisi sah `SUBMITTED→APPROVED`, `SUBMITTED→REJECTED` (oleh pemutus), `SUBMITTED→CANCELLED` (oleh pembuat, hanya selama SUBMITTED). `APPROVED`/`REJECTED` = terminal. Decision/cancel **idempoten** (ulang pada status terminal sama → 200 tanpa efek; transisi ilegal → `PERMIT_INVALID_TRANSITION`). Implementasi pakai conditional update Prisma (`where:{id,status:'SUBMITTED'}`) untuk cegah race; side-effect hanya saat state benar-benar berubah.
+- **Pemutus izin (lengkapi RBAC 7.4):** `POST /permits/:id/decision` = **wali kelas** (`Class.homeroomTeacherId` siswa ybs) + **SCHOOL_ADMIN** (scope class/school). Guru non-wali, PRINCIPAL, PARENT → ❌ 403. AuditLog `PERMIT_DECIDE` (before/after) wajib.
+- **Pembuat & duplikat:** `requestedByUserId` = siswa ybs ATAU ortu dengan `ParentLink ACTIVE` ke siswa; selain itu `FORBIDDEN`. Tolak izin overlap tanggal dengan SUBMITTED/APPROVED siswa sama → `PERMIT_DUPLICATE`.
+- **Efek ke absen (10.3):** APPROVED memicu recompute `DailyAttendanceStatus` tiap tanggal di `[dateStart..dateEnd]`. Map: `SICK`→SICK; `FAMILY|DISPENSATION|OTHER`→PERMIT. Sebelum kirim notif ABSENT_NO_INFO, cek dulu ada permit APPROVED.
+- **Lampiran:** presign `PERMIT_ATTACHMENT` enforce di server `size≤5MB` & `mime∈{image/jpeg,image/png,application/pdf}`; `attachmentUrl` harus hasil presign milik sekolah ybs (anti-SSRF).
+
+### 12A.4 Pengumuman (Announcement)
+- **Scope × role:** `CLASS` = TEACHER (hanya kelas yang diampu; `scopeIds`=classIds) + SCHOOL_ADMIN. `GRADE` = SCHOOL_ADMIN/PRINCIPAL (`scopeIds`=angka grade). `SCHOOL` = SCHOOL_ADMIN/PRINCIPAL (`scopeIds`=[]). `PARENTS` = SCHOOL_ADMIN/PRINCIPAL (opsional filter kelas di `scopeIds`). Semua dibatasi `schoolId` penulis; selain itu `ANNOUNCEMENT_SCOPE_FORBIDDEN`.
+- **Notif:** pengumuman → INAPP ke audiens; PUSH ringkas (judul) opsional; non-kritis → tanpa WA fallback.
+- **Retract (10.6):** valid hanya bila `now-publishedAt ≤ 15 mnt` (basis server) else `ANNOUNCEMENT_RETRACT_EXPIRED`; menyembunyikan dari daftar+inbox; AuditLog `ANNOUNCEMENT_RETRACT`.
+
+### 12A.5 Lintas-topik
+- **Thread Fase 2 = HANYA `PARENT_HOMEROOM`** (ortu↔wali kelas, ortu mulai dari `templateKey`). `CLASS_ROOM`/`APPLICATION` BUKAN Fase 2. Jangan buat DM siswa↔siswa / luar→siswa (guardrail 13.5).
+- **Kode error baru** (tambahkan ke `packages/shared/src/errors.ts`): `ATTENDANCE_INVALID_TOKEN, ATTENDANCE_OUT_OF_AREA, ATTENDANCE_LOCATION_REQUIRED, PERMIT_DUPLICATE, PERMIT_INVALID_TRANSITION, ANNOUNCEMENT_RETRACT_EXPIRED, ANNOUNCEMENT_SCOPE_FORBIDDEN`.
+- **Pakai infrastruktur existing:** RBAC `@Roles`/`@Scope` & `AuditService.write()` (append-only) yang sudah ada — jangan tulis ulang authz.
 
 ---
 
