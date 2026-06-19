@@ -24,7 +24,7 @@ class HomeScreen extends StatelessWidget {
     final label = role == null ? '-' : (_roleLabel[role] ?? role.value);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Magnoo'),
+        title: const Text('Magneo'),
         backgroundColor: paper,
         actions: [
           IconButton(

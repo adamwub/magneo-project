@@ -82,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('Magnoo',
+                  const Text('Magneo',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: magnetRed)),
                   const SizedBox(height: 4),

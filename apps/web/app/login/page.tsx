@@ -64,7 +64,7 @@ function LoginForm() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="space-y-2 text-center">
-          <div className="text-2xl font-extrabold tracking-tight text-primary">Magnoo</div>
+          <div className="text-2xl font-extrabold tracking-tight text-primary">Magneo</div>
           <CardTitle className="text-xl">Masuk Dashboard</CardTitle>
           <CardDescription>Untuk admin sekolah, kepala sekolah & pusat (HQ).</CardDescription>
         </CardHeader>

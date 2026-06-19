@@ -57,7 +57,7 @@ export async function renderInvitePdf(cards: InviteCard[], schoolName: string): 
     let cy = yTop - pad - 9;
     page.drawText(schoolName.slice(0, 40), { x: x + pad, y: cy, size: 9, font: bold, color: rgb(0.06, 0.14, 0.23) });
     cy -= 14;
-    page.drawText("Undangan Orang Tua — Magnoo", { x: x + pad, y: cy, size: 8, font, color: rgb(0.3, 0.3, 0.3) });
+    page.drawText("Undangan Orang Tua — Magneo", { x: x + pad, y: cy, size: 8, font, color: rgb(0.3, 0.3, 0.3) });
 
     // QR (kanan atas).
     const qrPng = await QRCode.toBuffer(card.code, { width: 96, margin: 0 });

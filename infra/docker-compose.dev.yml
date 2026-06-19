@@ -1,4 +1,4 @@
-# Magnoo — lingkungan pengembangan lengkap dalam satu perintah.
+# Magneo — lingkungan pengembangan lengkap dalam satu perintah.
 #
 #   docker compose -f infra/docker-compose.dev.yml up --build
 #   (atau dari akar repo:  pnpm dev:infra)

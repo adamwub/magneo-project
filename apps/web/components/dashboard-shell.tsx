@@ -26,7 +26,7 @@ export function DashboardShell({
     <div className="grid min-h-screen grid-cols-[240px_1fr]">
       <aside className="flex flex-col gap-6 border-r bg-card p-4">
         <div className="px-2">
-          <div className="text-xl font-extrabold tracking-tight text-primary">Magnoo</div>
+          <div className="text-xl font-extrabold tracking-tight text-primary">Magneo</div>
           <div className="text-xs text-muted-foreground">{area}</div>
         </div>
         <SidebarNav items={items} />

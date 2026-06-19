@@ -21,7 +21,7 @@ export function App() {
 
   return (
     <main class="wrap">
-      <div class="logo">Magnoo</div>
+      <div class="logo">Magneo</div>
       <p class="tag">WiFi Sekolah</p>
 
       <form class="form" onSubmit={(e) => e.preventDefault()}>

@@ -1,4 +1,4 @@
-// Magnoo — skema database CLOUD (BAGIAN 6.1–6.3 aplikasi.md).
+// Magneo — skema database CLOUD (BAGIAN 6.1–6.3 aplikasi.md).
 //
 // Konvensi (BAGIAN 6): setiap tabel punya id (UUID), createdAt, updatedAt.
 // Soft-delete via deletedAt untuk entitas bersejarah (User, School, Class).
@@ -668,7 +668,7 @@ model JobApplication {
   @@unique([jobPostId, alumniUserId])
 }
 
-// Magnoo Box fleet. id = box serial "MAGNOO-0001" (bukan UUID).
+// Magneo Box fleet. id = box serial "MAGNOO-0001" (bukan UUID).
 model Device {
   id               String    @id
   schoolId         String?

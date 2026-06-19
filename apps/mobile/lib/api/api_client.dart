@@ -32,7 +32,7 @@ class LoginResult {
   final bool mustAcceptTos;
 }
 
-/// Klien API Magnoo (Fase 1j). Method bersifat virtual → mudah di-fake saat test.
+/// Klien API Magneo (Fase 1j). Method bersifat virtual → mudah di-fake saat test.
 class ApiClient {
   ApiClient({String? baseUrl, http.Client? client})
       : base = baseUrl ?? '$_apiUrl$_prefix',
@@ -75,7 +75,7 @@ class ApiClient {
     required String password,
     required String deviceId,
   }) async {
-    final body = <String, dynamic>{'password': password, 'deviceId': deviceId, 'deviceName': 'Magnoo Mobile'};
+    final body = <String, dynamic>{'password': password, 'deviceId': deviceId, 'deviceName': 'Magneo Mobile'};
     if (username != null) body['username'] = username;
     if (phone != null) body['phone'] = phone;
     if (email != null) body['email'] = email;

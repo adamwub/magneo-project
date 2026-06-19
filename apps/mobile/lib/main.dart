@@ -4,16 +4,16 @@ import 'screens/login_screen.dart';
 import 'theme.dart';
 
 void main() {
-  runApp(const MagnooApp());
+  runApp(const MagneoApp());
 }
 
-class MagnooApp extends StatelessWidget {
-  const MagnooApp({super.key});
+class MagneoApp extends StatelessWidget {
+  const MagneoApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Magnoo',
+      title: 'Magneo',
       debugShowCheckedModeBanner: false,
       theme: magnooTheme(),
       home: const LoginScreen(),

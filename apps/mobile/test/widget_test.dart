@@ -47,7 +47,7 @@ class FakeApi extends ApiClient {
 void main() {
   testWidgets('Login menampilkan brand & field siswa; toggle ke dewasa', (tester) async {
     await tester.pumpWidget(MaterialApp(home: LoginScreen(api: FakeApi())));
-    expect(find.text('Magnoo'), findsOneWidget);
+    expect(find.text('Magneo'), findsOneWidget);
     expect(find.text('NIS'), findsOneWidget);
     await tester.tap(find.text('Guru / Ortu'));
     await tester.pumpAndSettle();

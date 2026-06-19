@@ -2,7 +2,7 @@ import type { Config } from "tailwindcss";
 import animate from "tailwindcss-animate";
 
 /**
- * Tema Magnoo (BAGIAN 7 identitas visual). Token semantik (shadcn-style) memetakan
+ * Tema Magneo (BAGIAN 7 identitas visual). Token semantik (shadcn-style) memetakan
  * ke warna brand via CSS var HSL di globals.css: ink, magnet-red, biru, emas, paper.
  */
 const config: Config = {

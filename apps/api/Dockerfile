@@ -1,4 +1,4 @@
-# Magnoo API (NestJS) — dev image.
+# Magneo API (NestJS) — dev image.
 # PENTING: build context = AKAR repo (lihat infra/docker-compose.dev.yml),
 # karena ini monorepo pnpm dan API memakai paket workspace @magnoo/shared.
 FROM node:20-slim AS base

@@ -2,7 +2,7 @@
   "name": "@magnoo/portal",
   "version": "0.0.0",
   "private": true,
-  "description": "Magnoo Captive Portal — Preact super ringan (<200KB), juga di-serve dari Box (ADR-002).",
+  "description": "Magneo Captive Portal — Preact super ringan (<200KB), juga di-serve dari Box (ADR-002).",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

@@ -1,4 +1,4 @@
-# Magnoo Dashboard (Next.js) — dev image.
+# Magneo Dashboard (Next.js) — dev image.
 # PENTING: build context = AKAR repo (monorepo pnpm, memakai @magnoo/shared).
 FROM node:20-slim AS base
 ENV PNPM_HOME=/pnpm

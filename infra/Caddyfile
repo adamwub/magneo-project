@@ -1,4 +1,4 @@
-# Magnoo — reverse proxy publik (Caddy).
+# Magneo — reverse proxy publik (Caddy).
 # Diakses dari luar lewat router:
 #   http://203.175.127.254:2180   -> :80  (HTTP)
 #   https://203.175.127.254:21443 -> :443 (HTTPS, sertifikat internal/self-signed dulu)

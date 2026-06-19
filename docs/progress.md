@@ -136,6 +136,24 @@
 
 -----
 
+## 2026-06-19 — Rebranding: Magnoo → Magneo (teks brand) + backup GitHub
+
+**Latar:** Nama "Magnoo" ternyata sudah dipakai & semua domainnya habis. Owner memutuskan rebrand ke **Magneo** (akar "magn-" dipertahankan → logo/warna magnet tetap relevan; "neo" = baru). Domain target **`magneo.id`** (+ `magneo.ai` on-brand AI) — belum dibeli (langkah owner). Backronym publik: **M**agnet · **A**ttention · **G**rowth · **N**etwork · **E**ngine(AI) · **O**utreach (versi investor: "O" = OOH).
+
+**Yang dikerjakan:** Ganti SEMUA teks-brand "Magnoo" (kapital) → "Magneo" di sumber UI/metadata: logo & judul web (dashboard-shell, layout, login, school), portal (logo + title WiFi), mobile (judul app, AppBar, login, deviceName, kelas `MagnooApp`→`MagneoApp`), teks PDF undangan ortu, log API, deskripsi package.json (web/api/portal), pubspec, komentar tema/schema/Caddyfile. Assertion widget test diikutkan.
+
+**Yang SENGAJA TIDAK disentuh (jaga stack & data):** scope package `@magnoo/*`, nama container/volume Docker `magnoo-*`, project compose `magnoo-dev`, nama DB `magnoo`, health id `magnoo-api`, tmp dir `magnoo-imports`, folder repo `magnoo-project`, **password test/seed** (`Magnoo!2026`, `MagnooDemo#2026`, "SMK Magnoo Demo"), dan **serial Box `MAGNOO-0001`** (identifier hardware — keputusan label fisik device ada di owner; tidak ada validasi regex yang memaksanya). Ini bisa diganti terpisah nanti bila owner mau.
+
+**Sudah dibuktikan jalan?** Ya:
+- Mobile: `flutter analyze` → **No issues found**; widget test **5/5 lulus** (termasuk test "Login menampilkan brand" yang kini mengecek teks **'Magneo'**).
+- Web: container `magnoo-web` di-**rebuild** dari sumber baru → **healthy**. Situs **live lewat Caddy**: `<title>Magneo Dashboard</title>` ✅, logo halaman login = **"Magneo"** ✅, **0** kemunculan "Magnoo" di HTML. HTTP `:2180`→200, HTTPS `:21443`→200 (via IP SNI), tanpa regresi.
+
+**Catatan/utang:** (1) Build artifacts lama (`apps/web/.next`, `dist/`) masih memuat string lama tapi regenerate tiap build — diabaikan (gitignore). (2) Rebrand identifier teknis (package scope/DB/container) & serial Box ditunda — perlu downtime terencana + persetujuan, di luar scope "teks brand". (3) Author commit ke depan di-set `Magneo Owner`.
+
+**Status:** Selesai & terbukti. (Pekerjaan rebranding, di luar urutan fase — tidak mengubah logika Fase 0–8.)
+
+-----
+
 ## 2026-06-19 — Infra: akses publik app via reverse proxy Caddy (HTTP/HTTPS)
 
 **Yang dikerjakan:** Supaya app Magnoo bisa dibuka dari luar (HP/internet), saya pasang "penjaga pintu depan" (reverse proxy **Caddy**) di server. Caddy duduk di port 80 (HTTP) & 443 (HTTPS) dan meneruskan tamu ke `web` (Next.js, port 3001). Backend (`api` 3000) dan database (Postgres/Redis) **tidak** dibuka ke luar — hanya web yang tampil. Karena belum ada domain, HTTPS pakai **sertifikat sementara buatan-sendiri** (self-signed) untuk IP `203.175.127.254` — browser akan kasih peringatan "tidak tepercaya", itu wajar; nanti diganti sertifikat resmi saat domain siap.

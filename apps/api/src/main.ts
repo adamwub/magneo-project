@@ -19,7 +19,7 @@ async function bootstrap(): Promise<void> {
 
   await app.listen(port);
   // eslint-disable-next-line no-console
-  console.log(`Magnoo API jalan di http://localhost:${port} (health: /health)`);
+  console.log(`Magneo API jalan di http://localhost:${port} (health: /health)`);
 }
 
 void bootstrap();

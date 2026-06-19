@@ -9,7 +9,7 @@ export default function SchoolHomePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Ringkasan Sekolah</h1>
-        <p className="text-muted-foreground">Selamat datang di dashboard sekolah Magnoo.</p>
+        <p className="text-muted-foreground">Selamat datang di dashboard sekolah Magneo.</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>

@@ -2,7 +2,7 @@
   "name": "@magnoo/api",
   "version": "0.0.0",
   "private": true,
-  "description": "Magnoo backend — NestJS modular monolith (ADR-003).",
+  "description": "Magneo backend — NestJS modular monolith (ADR-003).",
   "scripts": {
     "build": "nest build",
     "start": "node dist/main.js",

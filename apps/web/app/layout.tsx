@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Magnoo Dashboard",
+  title: "Magneo Dashboard",
   description: "Ekosistem digital sekolah — dashboard web.",
 };
 

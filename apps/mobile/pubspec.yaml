@@ -1,5 +1,5 @@
 name: magnoo_mobile
-description: "Magnoo — aplikasi HP multi-role (siswa/guru/ortu/alumni). ADR-001."
+description: "Magneo — aplikasi HP multi-role (siswa/guru/ortu/alumni). ADR-001."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
