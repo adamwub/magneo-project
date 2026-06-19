@@ -106,6 +106,56 @@ enum ConsentType {
       values.firstWhere((e) => e.value == v);
 }
 
+enum PermitType {
+  sick('SICK'),
+  family('FAMILY'),
+  dispensation('DISPENSATION'),
+  other('OTHER');
+
+  const PermitType(this.value);
+  final String value;
+
+  static PermitType fromValue(String v) =>
+      values.firstWhere((e) => e.value == v);
+}
+
+enum PermitStatus {
+  submitted('SUBMITTED'),
+  approved('APPROVED'),
+  rejected('REJECTED'),
+  cancelled('CANCELLED');
+
+  const PermitStatus(this.value);
+  final String value;
+
+  static PermitStatus fromValue(String v) =>
+      values.firstWhere((e) => e.value == v);
+}
+
+enum AnnScope {
+  class_('CLASS'),
+  grade('GRADE'),
+  school('SCHOOL'),
+  parents('PARENTS');
+
+  const AnnScope(this.value);
+  final String value;
+
+  static AnnScope fromValue(String v) =>
+      values.firstWhere((e) => e.value == v);
+}
+
+enum Platform {
+  android('ANDROID'),
+  ios('IOS');
+
+  const Platform(this.value);
+  final String value;
+
+  static Platform fromValue(String v) =>
+      values.firstWhere((e) => e.value == v);
+}
+
 class LoginRequest {
   final String? username;
   final String? phone;
@@ -432,5 +482,196 @@ class Session {
       'deviceName': deviceName,
       'createdAt': createdAt,
       'current': current,
+      };
+}
+
+class QrCurrentResponse {
+  final String token;
+  final int period;
+  final int expiresInSec;
+
+  const QrCurrentResponse({required this.token, required this.period, required this.expiresInSec});
+
+  factory QrCurrentResponse.fromJson(Map<String, dynamic> json) => QrCurrentResponse(
+      token: json['token'] as String,
+      period: json['period'] as int,
+      expiresInSec: json['expiresInSec'] as int,
+      );
+
+  Map<String, dynamic> toJson() => {
+      'token': token,
+      'period': period,
+      'expiresInSec': expiresInSec,
+      };
+}
+
+class DeviceRegisterRequest {
+  final String token;
+  final Platform platform;
+
+  const DeviceRegisterRequest({required this.token, required this.platform});
+
+  factory DeviceRegisterRequest.fromJson(Map<String, dynamic> json) => DeviceRegisterRequest(
+      token: json['token'] as String,
+      platform: Platform.fromValue(json['platform'] as String),
+      );
+
+  Map<String, dynamic> toJson() => {
+      'token': token,
+      'platform': platform.value,
+      };
+}
+
+class PermitCreateRequest {
+  final String? studentUserId;
+  final PermitType type;
+  final String dateStart;
+  final String dateEnd;
+  final String note;
+  final String? attachmentUrl;
+
+  const PermitCreateRequest({this.studentUserId, required this.type, required this.dateStart, required this.dateEnd, required this.note, this.attachmentUrl});
+
+  factory PermitCreateRequest.fromJson(Map<String, dynamic> json) => PermitCreateRequest(
+      studentUserId: json['studentUserId'] == null ? null : json['studentUserId'] as String,
+      type: PermitType.fromValue(json['type'] as String),
+      dateStart: json['dateStart'] as String,
+      dateEnd: json['dateEnd'] as String,
+      note: json['note'] as String,
+      attachmentUrl: json['attachmentUrl'] == null ? null : json['attachmentUrl'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+      'studentUserId': studentUserId,
+      'type': type.value,
+      'dateStart': dateStart,
+      'dateEnd': dateEnd,
+      'note': note,
+      'attachmentUrl': attachmentUrl,
+      };
+}
+
+class PermitDecisionRequest {
+  final String decision;
+  final String? decisionNote;
+
+  const PermitDecisionRequest({required this.decision, this.decisionNote});
+
+  factory PermitDecisionRequest.fromJson(Map<String, dynamic> json) => PermitDecisionRequest(
+      decision: json['decision'] as String,
+      decisionNote: json['decisionNote'] == null ? null : json['decisionNote'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+      'decision': decision,
+      'decisionNote': decisionNote,
+      };
+}
+
+class Permit {
+  final String id;
+  final String studentUserId;
+  final String requestedByUserId;
+  final PermitType type;
+  final String dateStart;
+  final String dateEnd;
+  final String note;
+  final String? attachmentUrl;
+  final PermitStatus status;
+  final String? decidedByUserId;
+  final String? decidedAt;
+  final String? decisionNote;
+
+  const Permit({required this.id, required this.studentUserId, required this.requestedByUserId, required this.type, required this.dateStart, required this.dateEnd, required this.note, this.attachmentUrl, required this.status, this.decidedByUserId, this.decidedAt, this.decisionNote});
+
+  factory Permit.fromJson(Map<String, dynamic> json) => Permit(
+      id: json['id'] as String,
+      studentUserId: json['studentUserId'] as String,
+      requestedByUserId: json['requestedByUserId'] as String,
+      type: PermitType.fromValue(json['type'] as String),
+      dateStart: json['dateStart'] as String,
+      dateEnd: json['dateEnd'] as String,
+      note: json['note'] as String,
+      attachmentUrl: json['attachmentUrl'] == null ? null : json['attachmentUrl'] as String,
+      status: PermitStatus.fromValue(json['status'] as String),
+      decidedByUserId: json['decidedByUserId'] == null ? null : json['decidedByUserId'] as String,
+      decidedAt: json['decidedAt'] == null ? null : json['decidedAt'] as String,
+      decisionNote: json['decisionNote'] == null ? null : json['decisionNote'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+      'id': id,
+      'studentUserId': studentUserId,
+      'requestedByUserId': requestedByUserId,
+      'type': type.value,
+      'dateStart': dateStart,
+      'dateEnd': dateEnd,
+      'note': note,
+      'attachmentUrl': attachmentUrl,
+      'status': status.value,
+      'decidedByUserId': decidedByUserId,
+      'decidedAt': decidedAt,
+      'decisionNote': decisionNote,
+      };
+}
+
+class AnnouncementCreateRequest {
+  final AnnScope scope;
+  final List<String>? scopeIds;
+  final String title;
+  final String body;
+
+  const AnnouncementCreateRequest({required this.scope, this.scopeIds, required this.title, required this.body});
+
+  factory AnnouncementCreateRequest.fromJson(Map<String, dynamic> json) => AnnouncementCreateRequest(
+      scope: AnnScope.fromValue(json['scope'] as String),
+      scopeIds: json['scopeIds'] == null ? null : (json['scopeIds'] as List).cast<String>(),
+      title: json['title'] as String,
+      body: json['body'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+      'scope': scope.value,
+      'scopeIds': scopeIds,
+      'title': title,
+      'body': body,
+      };
+}
+
+class Announcement {
+  final String id;
+  final String schoolId;
+  final String authorUserId;
+  final AnnScope scope;
+  final List<String> scopeIds;
+  final String title;
+  final String body;
+  final String publishedAt;
+  final String? retractedAt;
+
+  const Announcement({required this.id, required this.schoolId, required this.authorUserId, required this.scope, required this.scopeIds, required this.title, required this.body, required this.publishedAt, this.retractedAt});
+
+  factory Announcement.fromJson(Map<String, dynamic> json) => Announcement(
+      id: json['id'] as String,
+      schoolId: json['schoolId'] as String,
+      authorUserId: json['authorUserId'] as String,
+      scope: AnnScope.fromValue(json['scope'] as String),
+      scopeIds: (json['scopeIds'] as List).cast<String>(),
+      title: json['title'] as String,
+      body: json['body'] as String,
+      publishedAt: json['publishedAt'] as String,
+      retractedAt: json['retractedAt'] == null ? null : json['retractedAt'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+      'id': id,
+      'schoolId': schoolId,
+      'authorUserId': authorUserId,
+      'scope': scope.value,
+      'scopeIds': scopeIds,
+      'title': title,
+      'body': body,
+      'publishedAt': publishedAt,
+      'retractedAt': retractedAt,
       };
 }

@@ -241,6 +241,12 @@ enum NotifStatus {
   FAILED
 }
 
+// Platform device penerima push (FCM). Fase 2 (12A.2).
+enum Platform {
+  ANDROID
+  IOS
+}
+
 enum EwsStatus {
   OPEN
   ACTIONED
@@ -787,4 +793,18 @@ model ImportJob {
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
   finishedAt              DateTime?
+}
+
+// Token push (FCM) per device milik user. Fase 2 (12A.2).
+// Dipakai untuk mengirim notifikasi ke HP ortu. Tanpa relasi navigasi (konvensi skema: FK skalar).
+model DeviceToken {
+  id         String    @id @default(uuid())
+  userId     String
+  token      String    @unique // registration token FCM
+  platform   Platform
+  lastSeenAt DateTime  @default(now())
+  createdAt  DateTime  @default(now())
+  revokedAt  DateTime? // diisi saat token mati (UNREGISTERED) atau dicabut
+
+  @@index([userId])
 }

@@ -20,8 +20,8 @@
 - **⚠️ KONSTITUSI DIPERBARUI (2026-06-19): `aplikasi.md` naik v1.2 → v1.3 — TAMBAL CELAH FASE 2.** Hasil audit agen `magnoo-architect` (3 BLOCKER + 2 ringan). Ditambah **BAGIAN 12A — Adendum Spec Fase 2 (mengikat)**: koordinat+CIDR WiFi sekolah (A-1), model `DeviceToken`+`/me/devices` utk FCM (B-1), pemutus izin=wali kelas+SCHOOL_ADMIN (C-2), token QR TOTP server-side + anti-replay/foto (A-2/3), state machine izin (C-1), pengetatan notif/izin/pengumuman + 7 kode error baru. Detail & sumber: `docs/refs/fase2-grounding.md`. Backup: `_backup/aplikasi.SEBELUM-tambalfase2.*.md`. **Spec Fase 2 kini "siap dibangun lurus".** ADR & fase 0–8 tidak berubah.
 - **⚠️ KONSTITUSI DIPERBARUI (2026-06-19): `aplikasi.md` naik v1.1 → v1.2.** Sinkron dari **Big Blueprint v2** (dokumen STRATEGI, disimpan di `01-Strategi/magnoo-big-blueprint-v2.html`). **Hanya 2 tambahan; FASE TEKNIS 0–8 & semua ADR TIDAK BERUBAH:** (1) subbagian **1.1 Visi Jangka Panjang (5 Lapisan)** — konteks arah bisnis (Sekolah → OOH/Layar → Platform OOH → Programmatic → Data Marketplace); lapisan 2–5 BELUM buildable (butuh ADR + kajian hukum tersendiri). (2) **Guardrail 13.13 — Tembok Pemisah Data Anak**: data anak/sekolah tak pernah jadi produk iklan/OOH/data-marketplace; lapisan 2–5 hanya boleh data agregat/anonim & sumber non-anak. Backup pra-sinkron: `_backup/aplikasi.SEBELUM-sinkron-v2.*.md`. **Tidak berdampak ke Fase 2.**
 - **⚠️ KONSTITUSI DIPERBARUI (2026-06-17): `aplikasi.md` naik v1.0 → v1.1.** Pemilik mengirim revisi via Telegram bot. **Satu-satunya perubahan isi:** modul **Startup Center (Fase 8)** diperluas dari kerangka dasar jadi modul penuh — 6 model data baru (IdeaSupport, IdeaComment, Competition, CompetitionEntry, MentorProfile, MentorSession) + StartupIdea diperluas, ~30 endpoint, layar mobile (tab Startup Siswa & Guru, tab Mentor Alumni), dashboard web Sekolah & HQ, aturan bisnis **10.12**, ThreadType `STARTUP_ROOM`, 2 cron job baru. **Fase 0–7 TIDAK berubah** → tidak berdampak ke pekerjaan saat ini (kita di ambang Fase 2). Versi lama dibackup di `_backup/aplikasi.20260617-083507.md`. Catatan revisi ada di header `aplikasi.md`.
-- **Posisi sekarang:** **🎉 FASE 1 TUNTAS (1a–1k ✅).** Fase 0 ✅. Seluruh Fase 1 selesai: backend (1a–1h), web (1i), mobile (1j), uji E2E + gerbang QA-1 & QA-2 (1k). **Berikutnya: FASE 2** (Attendance + Notifikasi + Izin + Pengumuman). Sebelum mulai: baca BAGIAN 10.2–10.4 & 12 (Fase 2). Menunggu aba-aba pemilik.
-- **Sedang menuju:** **FASE 2** — Attendance (QR), Notifikasi (FCM nyata; WA stub), Izin, Pengumuman. Menunggu aba-aba pemilik + persetujuan rencana potongan.
+- **Posisi sekarang:** Fase 0 ✅, **🎉 FASE 1 TUNTAS (1a–1k ✅)**. **FASE 2 DIMULAI — potongan 2a ✅** (pondasi data: DeviceToken+migrasi, 7 error code, skema shared izin/pengumuman/device/QR-current, settings geo+wifi_cidrs; lihat entri 2a + rencana 14 potongan di bawah). **Berikutnya: 2b** (settings sekolah geo/wifi + helper geofence Haversine + IP-in-CIDR + trust proxy). Menunggu aba-aba owner.
+- **Sedang menuju:** **FASE 2** (2a ✅ → 2b berikutnya) — Attendance (QR), Notifikasi (FCM nyata; WA stub), Izin, Pengumuman. Rencana potongan 2a–2n disusun arsitek (lihat entri "Potongan 2a"). DoD Fase 2: scan QR→notif <60dtk, rule 10.2–10.4 ada unit test, QA-4 lulus.
 - **Uji E2E Fase 1:** `pnpm --filter @magnoo/api test:e2e` (`test/e2e/fase1.e2e.ts`) — butuh backend hidup (`PORT=3100`) + Postgres/Redis; OTP dibaca dari log server (`E2E_API_LOG`). 23 cek lulus.
 - **Catatan QA visual:** web diuji via Playwright+Chrome; mobile (Flutter) via `flutter analyze` + 5 widget test + `flutter build web` + screenshot. Server lokal uji: backend `PORT=3100`, web `next start -p 3005`, flutter web `python3 -m http.server 3007` di `build/web`.
 - **QA visual web:** Playwright + Chrome-for-Testing terpasang manual di `/opt/cft/chrome-linux64/chrome` (CDN Playwright keblokir firewall). Pakai `executablePath` itu. Web dev lokal: `API_URL=http://localhost:3100 next start -p 3005` (port 3001 dipakai kontainer web compose lama).
@@ -133,6 +133,36 @@
 > **Status:** (selesai / setengah / terhambat karena ...)
 > **Langkah berikutnya:** (apa yang dikerjakan sesi depan)
 > ```
+
+-----
+
+## 2026-06-19 — Fase 2 / Potongan 2a: Pondasi data (DeviceToken + error codes + skema shared)
+
+**Yang dikerjakan:** Membuka Fase 2 dari pondasi data (paling aman, tanpa logika bisnis) — seperti cara kita buka Fase 1. (1) Tambah model **DeviceToken** (12A.2, untuk token push HP ortu/FCM) + enum `Platform{ANDROID,IOS}` ke skema DB + migrasi. (2) Tambah **7 kode error** Fase 2 (12A.5). (3) Tambah skema data bersama (`packages/shared`): izin, pengumuman, registrasi device, token QR "current" (tanpa secret), serta koordinat sekolah (`geo`) + daftar CIDR WiFi (`wifi_cidrs`) di settings (12A.1). (4) Regen model Dart untuk HP.
+
+**File yang dibuat/diubah:**
+- `apps/api/prisma/schema.prisma` — enum `Platform` + model `DeviceToken{id,userId,token@unique,platform,lastSeenAt,createdAt,revokedAt?}` `@@index([userId])`.
+- `apps/api/prisma/migrations/20260619041317_device_token_fase2/` — migrasi **aditif murni** (CREATE TYPE + CREATE TABLE + index; nol DROP/ALTER tabel lama).
+- `packages/shared/src/errors.ts` — 7 kode (ATTENDANCE_INVALID_TOKEN/OUT_OF_AREA/LOCATION_REQUIRED, PERMIT_DUPLICATE/INVALID_TRANSITION, ANNOUNCEMENT_RETRACT_EXPIRED/SCOPE_FORBIDDEN).
+- `packages/shared/src/enums.ts` — PERMIT_TYPES, PERMIT_STATUSES, ANN_SCOPES, PLATFORMS + ENUM_REGISTRY (Dart).
+- baru: `packages/shared/src/{device,permit,announcement}.ts`; `attendance.ts` (+`qrCurrentResponseSchema`); `school.ts` (+`geo`,+`wifi_cidrs`); `index.ts` + `generate/registry.ts`.
+- tes: `errors.test.ts` (+blok 7 kode), `fase2.test.ts` (baru, 6 tes).
+- `apps/mobile/lib/generated/magnoo_models.dart` — ter-regen (23 model + 12 enum; model Fase 2 baru ada).
+
+**Keputusan kecil:** Kunci settings pakai **snake_case** (`geo`, `wifi_cidrs`, `qr_geo_radius_m`) menyesuaikan konvensi settings existing (bukan camelCase spec) — kunci kanonik ini WAJIB dipakai pembaca settings di 2g/2h. FK `DeviceToken.userId` skalar tanpa relasi navigasi (konvensi skema repo).
+
+**Sudah dibuktikan jalan?** Ya:
+- `pnpm --filter @magnoo/shared test` → **31 lulus** (6 Fase 2 + 7-kode-error). typecheck+build shared hijau.
+- Migrasi diterapkan (create-only→deploy, **tanpa seed**); tabel `DeviceToken` ada di DB; **data Fase 1 utuh** (users=11, schools=1 sebelum=sesudah).
+- **typecheck api ✅, web ✅; flutter analyze mobile ✅** (model Dart baru kompilasi: No issues found).
+- **Audit tim agen (read-only) sebelum commit:** arsitek-konformansi **LULUS 7/7** (cocok 12A, nol scope-creep, migrasi aditif); security **AMAN** (nol PII/secret/kredensial, nol pelonggaran Fase 1); simplifier **RAMPING** (nol dependency baru).
+
+**Utang guardrail (WAJIB ditegakkan di potongan logika lanjut — dari audit security):**
+- 2i (permit backend): `attachmentUrl` saat ini `z.string()` bebas → backend WAJIB anti-SSRF (allowlist host storage Magneo / terima object-key, jangan fetch URL klien) + presign berotorisasi & berdurasi pendek + cegah akses lintas-sekolah. RBAC putusan = wali kelas + SCHOOL_ADMIN; state machine + AuditLog.
+- 2h (push/FCM): registrasi device diikat `userId` **sesi** (bukan body); payload/log FCM TANPA nama/NIS (13.2); jangan log token utuh; set `revokedAt` saat `UNREGISTERED`; jangan ekspos `token` di response list.
+- 2j (announcement): tegakkan scope×role + retract ≤15 mnt + filter `schoolId` + AuditLog.
+
+**Status:** Selesai & terbukti. **Berikutnya: 2b** (settings sekolah geo+wifi_cidrs+radius: endpoint + helper geofence Haversine + cek IP-in-CIDR + `trust proxy`). Menunggu aba-aba owner.
 
 -----
 

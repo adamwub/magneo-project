@@ -16,9 +16,20 @@ import {
 } from "../auth.js";
 import {
   qrCheckinRequestSchema,
+  qrCurrentResponseSchema,
   attendanceEventSchema,
   dailyAttendanceStatusSchema,
 } from "../attendance.js";
+import { deviceRegisterRequestSchema } from "../device.js";
+import {
+  permitCreateRequestSchema,
+  permitDecisionRequestSchema,
+  permitSchema,
+} from "../permit.js";
+import {
+  announcementCreateRequestSchema,
+  announcementSchema,
+} from "../announcement.js";
 
 /**
  * Daftar skema yang akan dijadikan kelas model Dart (ADR-004).
@@ -47,4 +58,12 @@ export const MODEL_REGISTRY: ModelEntry[] = [
   { dartName: "RoleSwitchRequest", schema: roleSwitchRequestSchema },
   { dartName: "TosAcceptRequest", schema: tosAcceptRequestSchema },
   { dartName: "Session", schema: sessionSchema },
+  // Fase 2 — layar HP: absen QR, registrasi device push, izin, pengumuman.
+  { dartName: "QrCurrentResponse", schema: qrCurrentResponseSchema },
+  { dartName: "DeviceRegisterRequest", schema: deviceRegisterRequestSchema },
+  { dartName: "PermitCreateRequest", schema: permitCreateRequestSchema },
+  { dartName: "PermitDecisionRequest", schema: permitDecisionRequestSchema },
+  { dartName: "Permit", schema: permitSchema },
+  { dartName: "AnnouncementCreateRequest", schema: announcementCreateRequestSchema },
+  { dartName: "Announcement", schema: announcementSchema },
 ];

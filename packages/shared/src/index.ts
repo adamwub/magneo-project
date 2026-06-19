@@ -8,3 +8,6 @@ export * from "./constants.js";
 export * from "./auth.js";
 export * from "./school.js";
 export * from "./attendance.js";
+export * from "./device.js";
+export * from "./permit.js";
+export * from "./announcement.js";

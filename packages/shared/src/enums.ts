@@ -80,6 +80,22 @@ export const FINAL_ATT_STATUSES = [
 ] as const;
 export type FinalAtt = (typeof FINAL_ATT_STATUSES)[number];
 
+/** Permit.type — BAGIAN 6.2 / 10.3 (Fase 2) */
+export const PERMIT_TYPES = ["SICK", "FAMILY", "DISPENSATION", "OTHER"] as const;
+export type PermitType = (typeof PERMIT_TYPES)[number];
+
+/** Permit.status — state machine 12A.3 (Fase 2) */
+export const PERMIT_STATUSES = ["SUBMITTED", "APPROVED", "REJECTED", "CANCELLED"] as const;
+export type PermitStatus = (typeof PERMIT_STATUSES)[number];
+
+/** Announcement.scope — BAGIAN 6.2 / 10.6 (Fase 2) */
+export const ANN_SCOPES = ["CLASS", "GRADE", "SCHOOL", "PARENTS"] as const;
+export type AnnScope = (typeof ANN_SCOPES)[number];
+
+/** DeviceToken.platform — push FCM, 12A.2 (Fase 2) */
+export const PLATFORMS = ["ANDROID", "IOS"] as const;
+export type Platform = (typeof PLATFORMS)[number];
+
 /**
  * Registry enum untuk skrip generate Dart.
  * Tambahkan entri di sini saat menambah enum baru yang perlu di sisi Dart.
@@ -94,4 +110,9 @@ export const ENUM_REGISTRY = [
   // Fase 1 — dipakai di alur HP (ortu link anak & persetujuan ToS).
   { name: "LinkStatus", values: LINK_STATUSES },
   { name: "ConsentType", values: CONSENT_TYPES },
+  // Fase 2 — izin, pengumuman, device push (dipakai di layar HP).
+  { name: "PermitType", values: PERMIT_TYPES },
+  { name: "PermitStatus", values: PERMIT_STATUSES },
+  { name: "AnnScope", values: ANN_SCOPES },
+  { name: "Platform", values: PLATFORMS },
 ] as const;

@@ -68,6 +68,20 @@ export type AdminAccountResponse = z.infer<typeof adminAccountResponseSchema>;
 
 // ── School: setelan (BAGIAN 8.2 GET/PUT /school/settings, default 10.1) ──────
 
+/** Koordinat sekolah untuk geofence absensi (12A.1). */
+const geoPoint = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+});
+
+/** CIDR IPv4 (mis. "10.20.0.0/16") untuk validasi WiFi sekolah (12A.1). */
+const ipv4Cidr = z
+  .string()
+  .regex(
+    /^((25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(25[0-5]|2[0-4]\d|1?\d?\d)\/(3[0-2]|[12]?\d)$/,
+    "Format CIDR IPv4 HH.HH.HH.HH/NN.",
+  );
+
 /** Semua opsional: hanya field yang dikirim yang di-override (BAGIAN 10.1). */
 export const schoolSettingsSchema = z.object({
   jam_masuk: timeOfDay.optional(),
@@ -82,6 +96,9 @@ export const schoolSettingsSchema = z.object({
   student_wifi_mbps: z.number().positive().optional(),
   tutor_daily_quota: z.number().int().nonnegative().optional(),
   teacher_gen_daily_quota: z.number().int().nonnegative().optional(),
+  // Fase 2 (12A.1) — lokasi sekolah untuk verifikasi kehadiran (geofence ATAU WiFi).
+  geo: geoPoint.optional(),
+  wifi_cidrs: z.array(ipv4Cidr).optional(),
 });
 export type SchoolSettings = z.infer<typeof schoolSettingsSchema>;
 

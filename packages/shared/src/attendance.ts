@@ -20,6 +20,18 @@ export const qrCheckinRequestSchema = z.object({
 });
 export type QrCheckinRequest = z.infer<typeof qrCheckinRequestSchema>;
 
+/**
+ * GET /attendance/qr/current — token QR yang sedang berlaku untuk ditampilkan di
+ * layar gerbang (12A.1). Berisi token TOTP 8-digit yang berotasi; SECRET TOTP
+ * TIDAK PERNAH dikirim ke klien. `period` = detik per rotasi (30).
+ */
+export const qrCurrentResponseSchema = z.object({
+  token: z.string(),
+  period: z.number().int().positive(),
+  expiresInSec: z.number().int().nonnegative(),
+});
+export type QrCurrentResponse = z.infer<typeof qrCurrentResponseSchema>;
+
 /** Satu event absensi (immutable; koreksi = event baru, BAGIAN 6.2). */
 export const attendanceEventSchema = z.object({
   id: z.string(),
