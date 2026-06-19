@@ -51,11 +51,16 @@ Ini operasi BERISIKO TINGGI (mengubah konstitusi). Jangan koding fase saat itera
 
 ### 4. Kerjakan SATU potongan (konstitusi BAGIAN 2–3)
 - Pilih potongan **terkecil berikutnya** yang belum selesai (jangan loncat fase, jangan bangun yang tak diminta fase ini).
-- Rencanakan singkat → implementasikan potongan itu saja.
+- **Konsultasi arsitek dulu (WAJIB sebelum koding):** panggil subagent **`magnoo-architect`** (bila tipe ini belum dikenal di sesi, pakai `general-purpose` dan suruh ia BACA `/root/.claude/agents/magnoo-architect.md` sebagai instruksi operasinya) **MODE B** untuk potongan ini → dapatkan panduan build yang terikat `aplikasi.md` + pola teruji (library/versi, struktur, jebakan, checklist guardrail). Ikuti panduannya. Bila arsitek menemukan **celah/ambiguitas spec (MODE A)** yang bisa bikin menebak → JANGAN mengarang; lapor ke owner & tunggu (kecuali kosmetik).
+- Rencanakan singkat → implementasikan potongan itu saja **sesuai panduan arsitek**.
+- **Cek konformitas sebelum commit (WAJIB):** panggil `magnoo-architect` **MODE C** atas file/diff yang kamu tulis → pastikan patuh ADR, model data/API sesuai spec, aturan bisnis BAGIAN 10, **tidak langgar guardrail BAGIAN 13**, tanpa scope-creep. Bila ada LANGGAR → perbaiki dulu, jangan commit.
 - **Buktikan jalan** (WAJIB, BAGIAN 3 & 4):
   - Backend: `pnpm --filter @magnoo/api test` + typecheck/lint/build; bila perlu uji E2E ke server nyata (PORT=3100, infra hidup via `pnpm dev:infra`).
-  - Web: typecheck/lint/`next build` + **QA visual Playwright pakai Chrome** di `/opt/cft/chrome-linux64/chrome` (executablePath). Ambil **screenshot**.
-  - Mobile: `flutter analyze` + widget test + `flutter build web` (PATH: `export PATH="/opt/flutter/bin:$PATH"`).
+  - Web: typecheck/lint/`next build`. Nyalakan app, lalu jalankan **DUA agen QA** (subagent; bila tipe belum dikenal di sesi, pakai `general-purpose` dan suruh baca file persona-nya):
+    - **`magnoo-funcqa`** — uji FUNGSI: tombol/textbox/card/pills/teks/nav benar-benar berfungsi (Playwright + Chrome `/opt/cft/chrome-linux64/chrome`). Harus tidak ada FAIL blocker.
+    - **`magnoo-visualqa`** — uji VISUAL sesuai `docs/refs/design-system.md` (Claymorphism × Glassmorphism + palet brand): warna/bentuk/radius/bayangan/proporsi/kontras/konsistensi. Ambil **screenshot**.
+    - Sertakan ringkasan PASS/FAIL kedua agen + screenshot sebagai bukti. Ada FAIL/kurang blocker → perbaiki dulu, jangan commit.
+  - Mobile: `flutter analyze` + widget test + `flutter build web` (PATH: `export PATH="/opt/flutter/bin:$PATH"`), lalu serve `build/web` (port 3007) → jalankan `magnoo-funcqa` + `magnoo-visualqa` seperti di atas.
 - Jangan menambal di atas yang rusak. Bila fondasi goyah → kembali ke commit sehat terakhir & lapor.
 
 ### 5. Catat & commit (konstitusi BAGIAN 3)
@@ -87,6 +92,8 @@ python3 /root/magnoo-project/.autopilot/notify.py "✅ <ringkasan>" /path/ke/scr
 - Chrome QA visual: `/opt/cft/chrome-linux64/chrome` (CDN Playwright diblokir; pakai executablePath).
 - Infra dev: `pnpm dev:infra` (postgres+redis), API `PORT=3100`, web `next start -p 3005`, flutter web `python3 -m http.server 3007` di `build/web`.
 - Identitas visual: ink #10243A, merah #E4391F, biru #1656C9, emas #F2A91C, latar #F7F9FB; font Plus Jakarta Sans.
+- **TEMA UI = Claymorphism × Glassmorphism** → acuan WAJIB `docs/refs/design-system.md` (token terukur). Pembangun UI ikuti ini; visual-QA nilai terhadap ini.
+- **Agen pendukung:** `magnoo-architect` (grounding spec + konformitas), `magnoo-funcqa` (QA fungsi), `magnoo-visualqa` (QA tema). Definisi di `/root/.claude/agents/`. Grounding Fase 2 tersimpan di `docs/refs/fase2-grounding.md`.
 
 ## INGAT TIGA HAL KONSTITUSI
 1. Baca progress.md di awal. 2. Rencana sebelum koding. 3. Tiap selesai: catat di progress.md → buktikan jalan → commit. Plus: **lapor Telegram**.
