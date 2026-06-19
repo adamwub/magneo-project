@@ -3,6 +3,8 @@ import { AuthModule } from "../auth/auth.module";
 import { AttendanceModule } from "../attendance/attendance.module";
 import { PermitController } from "./permit.controller";
 import { PermitService } from "./permit.service";
+import { AnnouncementController } from "./announcement.controller";
+import { AnnouncementService } from "./announcement.service";
 
 /**
  * Modul comms (ADR-003 modular monolith).
@@ -13,8 +15,8 @@ import { PermitService } from "./permit.service";
  */
 @Module({
   imports: [AuthModule, AttendanceModule],
-  controllers: [PermitController],
-  providers: [PermitService],
-  exports: [PermitService],
+  controllers: [PermitController, AnnouncementController],
+  providers: [PermitService, AnnouncementService],
+  exports: [PermitService, AnnouncementService],
 })
 export class CommsModule {}
