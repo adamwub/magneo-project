@@ -140,6 +140,25 @@ yang bikin dilirik perusahaan; dan **siswa + guru lebih sering buka app & senang
 - **Rumah fase:** modul `common/profile` + `comms`; dekat **Fase 2** (PARENT_HOMEROOM sudah ada).
 - **Guardrail:** privasi kontak guru; komunikasi terang & tercatat (13.5).
 
+### F10. Pengingat Acara (Reminder pengumuman)
+- **Apa:** pengumuman yang punya **waktu acara** (mis. "pengambilan raport, Sabtu 09:00–10:00")
+  otomatis memicu **notifikasi pengingat** sebelum acara (mis. Jumat sore: *"besok pengambilan raport"*).
+- **Data:** `Announcement` + kolom opsional `eventStart` (+`eventEnd`, `location`). Tanpa `eventStart`
+  = pengumuman biasa (tak ada pengingat). Tabel kecil `Reminder{ id, announcementId, fireAt, status, sentAt? }`
+  untuk jadwal + anti-dobel.
+- **Aturan:**
+  - Default offset **H-1** (dikirim sore hari sebelumnya, jam wajar — mis. 17:00 waktu sekolah);
+    opsional **H-1 jam**. Pembuat bisa atur/matikan. Maks ~2 pengingat/pengumuman (anti-spam).
+  - Audiens pengingat = audiens pengumuman (kelas/angkatan/sekolah/ortu).
+- **Mekanis:** saat publish → `fireAt = eventStart − offset` (zona waktu sekolah) → simpan `Reminder`.
+  **Cron penyapu** (~tiap 10–15 mnt, pola seperti recompute) ambil reminder jatuh-tempo & belum terkirim
+  → kirim via pipeline notifikasi → tandai `sentAt` (dedup).
+- **Edge case:** retract pengumuman (≤15 mnt) → batalkan reminder belum-terkirim; acara <offset saat dibuat
+  (H-1 sudah lewat) → dilewati / kirim "hari ini"; clamp ke jam wajar (tak kirim tengah malam).
+- **Rumah fase / ketergantungan:** ekstensi **Announcement + Notification (Fase 2)**; penjadwalan bisa
+  dibangun lebih dulu, **pengiriman menunggu pipeline FCM** (2g-2/2h, butuh service account Firebase owner).
+- **Guardrail:** isi pengingat tanpa PII sensitif (judul acara saja); dedup; hormati audiens/scope pengumuman.
+
 ## 3. Roadmap bertahap (dipetakan ke fase yang sudah ada)
 | Saat | Yang dibangun |
 |---|---|
