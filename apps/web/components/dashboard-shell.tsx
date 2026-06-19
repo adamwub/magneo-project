@@ -24,7 +24,7 @@ export function DashboardShell({
 }) {
   return (
     <div className="grid min-h-screen grid-cols-[240px_1fr]">
-      <aside className="glass-panel flex flex-col gap-6 border-r p-4">
+      <aside className="clay-panel flex flex-col gap-6 p-4">
         <div className="px-2">
           <div className="text-xl font-extrabold tracking-tight text-primary">Magneo</div>
           <div className="text-xs text-muted-foreground">{area}</div>
@@ -32,7 +32,7 @@ export function DashboardShell({
         <SidebarNav items={items} />
       </aside>
       <div className="flex flex-col">
-        <header className="glass-panel sticky top-0 z-10 flex h-14 items-center justify-between border-b px-6">
+        <header className="clay-panel sticky top-0 z-10 flex h-14 items-center justify-between px-6">
           <div className="text-sm text-muted-foreground">
             {ROLE_LABEL[session.role] ?? session.role}
           </div>

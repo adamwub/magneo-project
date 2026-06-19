@@ -3,34 +3,37 @@
 @tailwind utilities;
 
 /*
- * Tema Magneo (BAGIAN 7): ink #10243A, magnet-red #E4391F, biru #1656C9,
- * emas #F2A91C, paper #F7F9FB. Nilai HSL (shadcn-style) agar modifier opacity jalan.
+ * Tema Magneo — SOFT PASTEL CLAYMORPHISM × GLASSMORPHISM (palet final owner).
+ * Base warm-sand, primary SAGE GREEN, sekunder powder-blue & blush-peach,
+ * teks warm-charcoal, shadow clay HANGAT (coklat-krem). Nilai HSL (shadcn-style)
+ * agar modifier opacity Tailwind tetap jalan.
  */
 :root {
-  --background: 210 33% 98%; /* paper */
-  --foreground: 211 57% 15%; /* ink */
-  --card: 0 0% 100%;
-  --card-foreground: 211 57% 15%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 211 57% 15%;
-  --primary: 8 78% 51%; /* magnet red */
-  --primary-foreground: 0 0% 100%;
-  --secondary: 219 80% 44%; /* biru */
-  --secondary-foreground: 0 0% 100%;
-  --accent: 40 89% 53%; /* emas */
-  --accent-foreground: 211 57% 15%;
-  --muted: 210 20% 94%;
-  --muted-foreground: 211 16% 42%;
-  --destructive: 0 72% 45%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 210 22% 88%;
-  --input: 210 22% 88%;
-  --ring: 8 78% 51%;
+  --background: 38 41% 85%; /* warm-sand #E9DECB */
+  --foreground: 53 6% 25%; /* warm charcoal #44433C */
+  --card: 40 60% 96%; /* cream-surface #FBF7EF */
+  --card-foreground: 53 6% 25%;
+  --popover: 40 60% 96%;
+  --popover-foreground: 53 6% 25%;
+  --primary: 109 21% 60%; /* sage-deep #8AAE82 */
+  --primary-foreground: 100 18% 18%; /* deep sage-charcoal (kontras di atas sage) */
+  --secondary: 203 39% 74%; /* powder blue #A2C2D6 */
+  --secondary-foreground: 205 25% 20%;
+  --accent: 23 67% 82%; /* blush peach #F0CBB4 */
+  --accent-foreground: 53 6% 25%;
+  --muted: 40 47% 93%; /* soft-cream #F5EFE3 */
+  --muted-foreground: 49 7% 51%; /* text-secondary #8A8779 */
+  --destructive: 12 49% 70%; /* error terracotta #D89B8C */
+  --destructive-foreground: 16 30% 20%;
+  --border: 39 29% 78%; /* warm low-contrast #D8CDB8 */
+  --input: 39 29% 78%;
+  --ring: 109 21% 60%; /* sage */
   --radius: 1.5rem; /* clay: sudut membulat chunky (24px) */
-  /* Claymorphism: bayangan ganda (highlight terang + bayang gelap) & inset cekung */
-  --clay-shadow: -6px -6px 14px rgba(255, 255, 255, 0.85), 7px 7px 18px rgba(16, 36, 58, 0.16);
-  --clay-shadow-sm: -3px -3px 8px rgba(255, 255, 255, 0.8), 4px 4px 10px rgba(16, 36, 58, 0.14);
-  --clay-inset: inset 4px 4px 8px rgba(16, 36, 58, 0.13), inset -4px -4px 8px rgba(255, 255, 255, 0.9);
+
+  /* Clay shadow HANGAT (coklat-krem) + highlight putih (efek puff), bukan abu-abu. */
+  --clay-shadow: 0 12px 24px rgba(150, 130, 100, 0.22), inset 0 2px 3px rgba(255, 255, 255, 0.7);
+  --clay-shadow-sm: 0 6px 14px rgba(150, 130, 100, 0.2), inset 0 1px 2px rgba(255, 255, 255, 0.7);
+  --clay-inset: inset 0 3px 6px rgba(150, 130, 100, 0.22), inset 0 -2px 4px rgba(255, 255, 255, 0.55);
 }
 
 * {
@@ -38,20 +41,20 @@
 }
 body {
   background-color: hsl(var(--background));
-  /* Glassmorphism substrate: gradient lembut + blob brand agar efek kaca terlihat */
+  /* Blob pastel MUTED di atas warm-sand (sage / peach / powder-blue). */
   background-image:
-    radial-gradient(closest-side at 12% 10%, rgba(22, 86, 201, 0.1), transparent 70%),
-    radial-gradient(closest-side at 90% 6%, rgba(228, 57, 31, 0.08), transparent 70%),
-    radial-gradient(closest-side at 82% 94%, rgba(242, 169, 28, 0.12), transparent 72%);
+    radial-gradient(closest-side at 12% 10%, rgba(167, 196, 160, 0.32), transparent 70%),
+    radial-gradient(closest-side at 90% 8%, rgba(240, 203, 180, 0.3), transparent 70%),
+    radial-gradient(closest-side at 82% 94%, rgba(162, 194, 214, 0.3), transparent 72%);
   background-attachment: fixed;
   color: hsl(var(--foreground));
   font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-/* ===== Design-system Magneo: Claymorphism × Glassmorphism (utility dipakai komponen) ===== */
+/* ===== Design-system: Soft Pastel Claymorphism × Glassmorphism ===== */
 @layer components {
-  /* Permukaan clay menonjol (kartu): membulat, tanpa border keras, bayangan ganda. */
+  /* Kartu clay dasar: cream, membulat, shadow hangat + puff highlight, tanpa border keras. */
   .clay-card {
     background-color: hsl(var(--card));
     border-radius: 1.5rem;
@@ -69,15 +72,20 @@ body {
   .clay-input {
     border: none;
     border-radius: 1.25rem;
-    background-color: hsl(var(--background));
+    background-color: hsl(var(--muted));
     box-shadow: var(--clay-inset);
   }
-  /* Panel kaca (sidebar, topbar): semi-transparan + blur. */
-  .glass-panel {
-    background-color: rgba(247, 249, 251, 0.62);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-color: rgba(255, 255, 255, 0.5);
-    box-shadow: 0 8px 32px rgba(16, 36, 58, 0.1);
+  /* Panel chrome (sidebar/topbar) = clay cream SOLID (bukan glass; glass khusus overlay). */
+  .clay-panel {
+    background-color: hsl(var(--card));
+    box-shadow: 0 8px 24px rgba(150, 130, 100, 0.14);
+  }
+  /* Glass HANYA untuk layer atas: modal / bottom-sheet / overlay. */
+  .glass-overlay {
+    background-color: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 16px 40px rgba(150, 130, 100, 0.22);
   }
 }

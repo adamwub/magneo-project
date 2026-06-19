@@ -21,12 +21,14 @@ async function getSummary(date: string): Promise<{ summary?: SchoolAttendanceSum
 }
 
 /** Meta tampilan tiap status: label Indonesia + warna aksen brand. */
+// Warna semantik muted (nyatu tema pastel): hadir=sage, telat=honey, izin=info-blue,
+// sakit=peach, tanpa-kabar=terracotta. Sengaja kalem, bukan saturasi tinggi.
 const STATUS_META: { key: keyof SchoolAttendanceSummary["counts"]; label: string; color: string }[] = [
-  { key: "PRESENT", label: "Hadir", color: "#1656C9" },
-  { key: "LATE", label: "Terlambat", color: "#F2A91C" },
-  { key: "PERMIT", label: "Izin", color: "#10243A" },
-  { key: "SICK", label: "Sakit", color: "#0E7C7B" },
-  { key: "ABSENT_NO_INFO", label: "Tanpa Kabar", color: "#E4391F" },
+  { key: "PRESENT", label: "Hadir", color: "#6E9A63" },
+  { key: "LATE", label: "Terlambat", color: "#C99A4E" },
+  { key: "PERMIT", label: "Izin", color: "#6B97B3" },
+  { key: "SICK", label: "Sakit", color: "#C98E6E" },
+  { key: "ABSENT_NO_INFO", label: "Tanpa Kabar", color: "#C77B6B" },
 ];
 
 export default async function AbsensiPage({
