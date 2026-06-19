@@ -41,6 +41,11 @@ export const envSchema = z.object({
   // mengenkripsi secret TOTP absensi QR per sekolah di DB (12A.1, BAGIAN 14). Di produksi
   // WAJIB dari vault/secret manager, acak, tak pernah di repo.
   QR_TOTP_ENC_KEY: z.string().min(44),
+
+  // Fase 2 (2h): path file service account Firebase (FCM) untuk KIRIM push. Opsional —
+  // bila kosong/file tak ada, notifikasi jalan mode STUB (tercatat, tak terkirim). Di produksi
+  // dari vault/luar repo, tak pernah di-commit (13.11).
+  FIREBASE_SERVICE_ACCOUNT_PATH: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

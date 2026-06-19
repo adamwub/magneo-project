@@ -1,0 +1,7 @@
+Firebase project: magneo-44b6d
+Project number / FCM sender id: 297793480333
+Android App ID (publik): 1:297793480333:android:6ed012fc45b4eb9ed2a4c4
+Package name (applicationId Flutter harus = ini): app.magneo.id
+google-services.json: apps/mobile/android/app/ (gitignored)
+Keystore release: /root/magnoo-secrets/magneo-release.p12 (SHA-1/256 sudah didaftarkan owner)
+BELUM ADA: service account JSON (server firebase-admin) -> push masih STUB sampai ini masuk.

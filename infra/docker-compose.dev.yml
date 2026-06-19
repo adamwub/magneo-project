@@ -57,6 +57,11 @@ services:
       NIS_PSEUDONYM_PEPPER: dev-only-nis-pseudonym-pepper-change-me
       # Fase 2 (2c) — kunci AES-256-GCM secret TOTP QR (base64 32 byte). Dev only; PROD via vault.
       QR_TOTP_ENC_KEY: mUB64L3a5bng8VbZ2fyF+EQ3FdVaqGGu/P8ZGEvJPgk=
+      # Fase 2 (2h) — service account Firebase (FCM) di-mount read-only dari host (di luar repo).
+      # Bila file tak ada → notif otomatis mundur ke mode stub (aman). PROD via vault/secret.
+      FIREBASE_SERVICE_ACCOUNT_PATH: /secrets/firebase-service-account.json
+    volumes:
+      - /root/magnoo-secrets:/secrets:ro
     ports:
       - "3000:3000"
     depends_on:
