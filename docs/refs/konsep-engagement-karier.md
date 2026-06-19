@@ -23,6 +23,23 @@ yang bikin dilirik perusahaan; dan **siswa + guru lebih sering buka app & senang
 5. **Pisahkan kuasa.** Fungsi guru "menilai/menjaga" dipisah dari "menjual" → cegah konflik
    kepentingan & paksaan terhadap siswa.
 
+## 1B. FILOSOFI DESAIN INTI (kompas semua fitur — uji tiap fitur ke sini)
+> Tujuan: app **fun & aktif dipakai**, bukan sekadar alat administratif. Empat aturan main:
+1. **Partisipasi-dulu, kreasi-opsional.** Pola UGC = 1% bikin, 99% nonton. Maka keseruan TIDAK
+   boleh bergantung pada "semua jadi kreator". Yang 99% tetap dapat app seru tanpa bikin apa pun
+   (kuis, nonton, bantu jawab, poin, streak, skill passport tumbuh dari *belajar*). **Poin dari
+   PARTISIPASI** (hadir/kuis/bantu/belajar), kreasi = jalur bonus, bukan tiket masuk.
+2. **Ambang kreasi serendah teks/suara + dibantu AI.** "Konten" tak harus video: jawab 1 pertanyaan,
+   1 tips, foto papan tulis, voice note = kontribusi. **AI mengangkat beban produksi** — guru
+   ngomong/nulis poin, AI merapikan jadi materi/kuis. Yang dihargai = **keahlian**, bukan bakat ngonten
+   (krusial untuk guru senior).
+3. **Admin di belakang layar.** Tulang punggung (absen/izin/pengumuman) jalan otomatis & sekali-tap;
+   yang di depan panggung = lapisan hidup (kreasi/poin/portofolio). App pertama-tama **meringankan**
+   kerja (itu hook adopsi, terutama guru tua), baru "fun".
+4. **Anti-kanvas-kosong + sehat.** Seed materi awal + misi mingguan (bukan layar kosong). Metrik
+   tonjolkan **progres & penguasaan**, BUKAN popularitas/like (hindari efek sosial-media beracun ke anak).
+> Konsekuensi keamanan (bonus): volume UGC kecil & terstruktur → moderasi "verifikasi-dulu" jadi ringan & aman.
+
 ## 2. Fitur → pemetaan arsitektur
 
 ### F1. Open Class — Konsultasi Spesialis (tercatat)
@@ -118,10 +135,12 @@ yang bikin dilirik perusahaan; dan **siswa + guru lebih sering buka app & senang
   - **Alarm dini (EWS):** kelas dengan kehadiran turun / banyak ABSENT_NO_INFO → kepsek tindak lanjut.
     (Enum `EwsStatus` sudah ada di skema — nyambung.)
 - **Rumah fase:** **Fase 8 (Analitik)** + modul **AI (Fase 4)**.
-- **⚠️ TABRAKAN GUARDRAIL (temuan arsitek):** F7 berbenturan dengan **guardrail 13.6** yang melarang
-  *"dashboard kinerja/ranking/laporan pemakaian per guru yang diakses kepsek."* F7 **BELUM buildable**
-  sampai **owner secara eksplisit merekonsiliasi/mengamandemen 13.6** (bersama ADR-baru-E). Jangan
-  dilonggarkan diam-diam. Keputusan owner.
+- **✅ SOLUSI tabrakan 13.6 (tanpa melemahkan guardrail):** masalahnya F7 versi awal "menilai guru".
+  **Dibalik jadi berpusat siswa/kelas:** dashboard = **kesehatan kelas & kesejahteraan siswa**
+  (tren kehadiran per kelas, EWS kelas berisiko, agregat sekolah) — unitnya **kelas/siswa, BUKAN skor
+  per guru** → tidak melanggar 13.6. "Pemetaan AI" = *"kelas ini butuh dukungan"* (fokus situasi &
+  bantuan, bukan vonis guru). Analitik untuk guru = **cermin pribadi guru itu sendiri (opt-in), bukan
+  diakses kepsek sebagai ranking.** Dengan begini 13.6 tetap utuh & guru terlindungi. (ADR-baru-E.)
 
 ### F8. Prestasi Terverifikasi (kebanggaan sekolah)
 - **Apa:** siswa/guru catat prestasi (lomba, juara, sertifikasi) → **diverifikasi** (guru/admin) →
@@ -162,6 +181,53 @@ yang bikin dilirik perusahaan; dan **siswa + guru lebih sering buka app & senang
 - **Rumah fase / ketergantungan:** ekstensi **Announcement + Notification (Fase 2)**; penjadwalan bisa
   dibangun lebih dulu, **pengiriman menunggu pipeline FCM** (2g-2/2h, butuh service account Firebase owner).
 - **Guardrail:** isi pengingat tanpa PII sensitif (judul acara saja); dedup; hormati audiens/scope pengumuman.
+
+### F11. Kanal Konseling BK (privat dari ortu, tetap aman)
+- **Apa:** siswa konsultasi/curhat ke **guru BK** secara **privat dari ortu** (ortu memberi **izin**
+  di depan, tapi tidak memantau isi — supaya anak berani jujur).
+- **Cara kerja aman:** "privat dari ortu" **≠ gelap dari sistem.** Dipegang **peran BK terlatih &
+  akuntabel**; pesan **terekam dengan akses terkunci (break-glass — hanya dibuka bila ada indikasi
+  bahaya)**; **eskalasi wajib** bila ada tanda anak berisiko. Standar safeguarding konseling.
+- **Sifat:** ini **pengecualian terkendali** terhadap default "tak ada kanal privat dewasa↔anak" —
+  bukan pelanggaran 13.5 (tak gelap/akuntabel), tapi sensitif → **wajib ADR + kajian hukum** (data
+  konseling = sensitif PDP) + peran BK resmi.
+- **Rumah fase:** ekstensi `comms`/BK; **gated-ADR+hukum.**
+
+### F12. Alat TU (fungsional, ber-AI, bukan ribet administratif)
+- **Apa:** TU dapat alat yang **memberdayakan**, bukan formulir: **AI** (buat draf surat/pengumuman/
+  rekap dari data yang ada), **blast** (kirim massal pengumuman/surat ke audiens), ekspor & cetak sekali-tap.
+- **Cara kerja aman:** blast tunduk **scope×role pengumuman (12A.4) + batas frekuensi + audit**; AI via
+  proxy `ai` (ADR-007); tanpa PII anak ke luar.
+- **Rumah fase:** dekat `school` admin + AI (Fase 4/5); sebagian (rekap/ekspor) dekat fitur admin existing.
+- **Catatan peran:** "TU" belum jadi role di sistem (ROLES) — kemungkinan = SCHOOL_ADMIN atau sub-role
+  terbatas; perlu penanda peran bila diaktifkan.
+
+### F13. Ruang Kreasi (konten guru/siswa — verifikasi-dulu, dibantu AI)
+- **Apa:** guru unggah materi/video/Open Class; siswa unggah karya/eksperimen/proyek → dapat poin,
+  masuk Skill Passport. Mewujudkan Filosofi 1B (partisipasi-dulu, kreasi-opsional, AI-assist).
+- **Cara kerja aman (UGC anak = kategori paling berisiko):**
+  - **Verifikasi-dulu-baru-tayang:** karya siswa hanya muncul setelah **guru menyetujui** (jaring
+    pengaman + kualitas + label "terverifikasi", satu desain tiga guna).
+  - **Audiens dalam-sekolah** (bukan internet terbuka); citra/identitas anak → **izin ortu** (ADR-005).
+  - **Ambang rendah + AI-assist** (teks/suara → AI rapikan); **metrik sehat** (progres, bukan like/follower).
+- **Rumah fase:** **Fase 5** (engagement); UGC + moderasi = **gated-ADR+hukum** (consent + moderasi anak).
+
+### F14. Sambungan ke Startup Center (ide → mentor → investor)
+- **Apa:** ide/karya terbaik "naik kelas" ke **Startup Center (Fase 8, sudah ada)** — dimentori
+  **Magneo crew** (+ alumni), diadu di kompetisi/demo day, lalu **disambungkan ke investor.**
+- **Posisi dalam visi:** ini **puncak tangga pertumbuhan**: belajar → berkarya (F13) → skill/portofolio
+  (F2) → inovasi (Startup Center) → didanai. Mengikat seluruh konsep jadi satu narasi.
+- **Sudah ada vs baru:** Startup Center (StartupIdea, MentorProfile, MentorSession, Competition, demo day,
+  ThreadType `STARTUP_ROOM`) **sudah di spec Fase 8**. Baru: (a) **Magneo crew sebagai mentor** (perluas
+  MentorProfile, mudah); (b) **sambungan ke investor** (bagian berat).
+- **Deep-analyze risiko (sambungan investor):**
+  - **Siswa = anak** → koneksi investor **gated**: izin ortu, **dimediasi mentor/sekolah**, **investor TIDAK
+    kontak anak langsung**, kejelasan **kepemilikan/IP ide** (ide anak milik siapa?), perlindungan dari
+    eksploitasi. **Alumni (dewasa) = bersih.**
+  - **Hukum/keuangan:** perjanjian investasi/sekuritas, IP, pajak → **ADR + kajian hukum.**
+  - **Kurasi:** koneksi investor lewat **demo day / mentor-vetted**, bukan siswa nge-DM investor bebas.
+- **Rumah fase:** mentoring + idea-building = **Fase 8 (sebagian sudah ada)**; **sambungan investor =
+  gated-ADR+hukum** (adult/consent, kurasi).
 
 ## 3. Roadmap bertahap (dipetakan ke fase yang sudah ada)
 | Saat | Yang dibangun |
