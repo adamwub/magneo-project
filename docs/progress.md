@@ -138,6 +138,18 @@
 
 -----
 
+## 2026-06-19 — DEPLOY ke server + QA visual (temuan penting)
+
+**Temuan (lewat agen visual-QA):** Container `magnoo-api` yang live ternyata **rangka kosong Fase-0** (boot 02:54, hanya HealthController, semua `/api/v1/*` → 404). Seluruh aplikasi ada di kode/GitHub tapi **belum pernah ter-deploy** → login gagal di situs live. Owner setujui deploy.
+
+**Yang dikerjakan (owner-approved):** `docker compose build api web` (image dari kode terkini) → `up -d` → entrypoint api `prisma migrate deploy` (apply migrasi pending `device_token_fase2`, `school_qr_totp_secret` — additive, aman; semua tabel Fase 2 sudah di migrasi `init`). **Bukti:** api log kini map semua controller (auth/attendance/dst); `POST /api/v1/auth/login` admin demo → **HTTP 200 (token terbit)**. Situs live kini BERFUNGSI.
+
+**QA visual halaman Absensi (`/school/absensi`) di web live:** **PASS render** — login→redirect→halaman tampil penuh (kartu total + 5 status warna brand + persen + pemilih tanggal); responsif mobile rapi. Screenshot: `/tmp/qa-absensi-desktop.png`, `/tmp/qa-absensi-mobile.png` (dikirim ke owner).
+
+**UTANG DESAIN (penting, se-aplikasi) → Ide & Utang:** Tampilan web masih **flat/material**, belum **claymorphism×glassmorphism** sesuai design-system. Ini di komponen DASAR (Card/Button/Input + dashboard-shell), jadi berlaku semua halaman. Token konkret dari agen: kartu radius 24px + bayangan ganda clay (hapus border keras); tombol aksi primer **merah `#E4391F`** clay (saat ini biru); field Clay-inset radius ~20px tinggi ≥44px; sidebar/topbar **Glass** (blur 12–20px, semi-transparan) + latar gradient/blob brand. Warna angka status & font Plus Jakarta Sans sudah BENAR. → **Usul potongan berikutnya: "2l-theme" — pasang design-system clay/glass di komponen dasar (sekali kerja, semua halaman cakep), lalu re-deploy + re-QA.**
+
+-----
+
 ## 2026-06-19 — Fase 2 / Potongan 2l (bagian-1): Web /school — halaman Absensi (ringkasan harian)
 
 **Yang dikerjakan:** Halaman web pertama Fase 2 untuk sekolah — ringkasan kehadiran harian (kepsek/admin).
