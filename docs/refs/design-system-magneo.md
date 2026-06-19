@@ -6,6 +6,10 @@
 > (bukan palet brand lama ink/merah/biru/emas — itu sudah diganti).
 >
 > Implementasi token web: `apps/web/app/globals.css` (CSS var HSL) + `tailwind.config.ts`.
+>
+> **REVISI 19 Jun 2026 (owner):** PRIMARY = **POWDER BLUE** (tombol & nav aktif), bukan sage.
+> **SAGE GREEN = aksen kecil saja**, jangan dominan. Latar utama = **putih lembut + gradasi soft
+> cream** (warm-sand penuh dikurangi). Kartu cream pakai **gradasi** (putih→cream), bukan flat.
 
 ## 1. Palet warna
 
@@ -59,7 +63,7 @@
 - **HANYA untuk layer atas: modal / bottom-sheet / overlay.** BUKAN kartu dasar, BUKAN sidebar/topbar (itu clay cream solid `.clay-panel`).
 
 ## 4. Aturan (RULES)
-1. Primary = **SAGE GREEN**. Powder-blue & blush-peach = secondary. Lavender = tertiary (terbatas).
+1. Primary = **POWDER BLUE** (tombol & nav aktif). Blush-peach = secondary. **SAGE GREEN = aksen kecil saja (jangan dominan)**. Lavender = tertiary (terbatas).
 2. Semua pastel **MUTED** — hindari saturasi tinggi.
 3. Shadow clay selalu **nada hangat** (coklat-krem), jangan abu-abu.
 4. Glass cuma layer atas (sheet/modal/overlay), bukan kartu dasar.

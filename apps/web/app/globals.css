@@ -9,25 +9,25 @@
  * agar modifier opacity Tailwind tetap jalan.
  */
 :root {
-  --background: 38 41% 85%; /* warm-sand #E9DECB */
+  --background: 40 33% 98%; /* near-white cream (lebih putih; gradasi soft di body) */
   --foreground: 53 6% 25%; /* warm charcoal #44433C */
-  --card: 40 60% 96%; /* cream-surface #FBF7EF */
+  --card: 40 60% 96%; /* cream-surface #FBF7EF (kartu pakai gradasi cream→putih) */
   --card-foreground: 53 6% 25%;
   --popover: 40 60% 96%;
   --popover-foreground: 53 6% 25%;
-  --primary: 109 21% 60%; /* sage-deep #8AAE82 */
-  --primary-foreground: 100 18% 18%; /* deep sage-charcoal (kontras di atas sage) */
-  --secondary: 203 39% 74%; /* powder blue #A2C2D6 */
-  --secondary-foreground: 205 25% 20%;
-  --accent: 23 67% 82%; /* blush peach #F0CBB4 */
-  --accent-foreground: 53 6% 25%;
+  --primary: 203 39% 74%; /* PRIMARY = POWDER BLUE #A2C2D6 (soft blue) — tombol & nav aktif */
+  --primary-foreground: 205 32% 22%; /* charcoal-biru (kontras di atas biru soft) */
+  --secondary: 23 67% 82%; /* blush peach #F0CBB4 */
+  --secondary-foreground: 20 32% 22%;
+  --accent: 100 28% 78%; /* sage-light #C2D6B8 — HIJAU hanya AKSEN KECIL (jangan dominan) */
+  --accent-foreground: 100 25% 20%;
   --muted: 40 47% 93%; /* soft-cream #F5EFE3 */
   --muted-foreground: 49 7% 51%; /* text-secondary #8A8779 */
   --destructive: 12 49% 70%; /* error terracotta #D89B8C */
   --destructive-foreground: 16 30% 20%;
-  --border: 39 29% 78%; /* warm low-contrast #D8CDB8 */
-  --input: 39 29% 78%;
-  --ring: 109 21% 60%; /* sage */
+  --border: 39 24% 84%; /* low-contrast lembut */
+  --input: 39 24% 84%;
+  --ring: 203 39% 74%; /* powder blue */
   --tertiary: 264 26% 75%; /* soft lavender #BCAFD0 — AKSEN tipis (badge/icon aktif), bukan area besar */
   --tertiary-foreground: 262 30% 24%;
   --radius: 1.5rem; /* clay: sudut membulat chunky (24px) */
@@ -43,11 +43,11 @@
 }
 body {
   background-color: hsl(var(--background));
-  /* Blob pastel MUTED di atas warm-sand (sage / peach / powder-blue). */
+  /* Latar PUTIH lembut + gradasi soft cream; blob biru & peach tipis, hijau minim. */
   background-image:
-    radial-gradient(closest-side at 12% 10%, rgba(167, 196, 160, 0.32), transparent 70%),
-    radial-gradient(closest-side at 90% 8%, rgba(240, 203, 180, 0.3), transparent 70%),
-    radial-gradient(closest-side at 82% 94%, rgba(162, 194, 214, 0.3), transparent 72%);
+    radial-gradient(closest-side at 88% 6%, rgba(162, 194, 214, 0.22), transparent 70%),
+    radial-gradient(closest-side at 92% 96%, rgba(240, 203, 180, 0.18), transparent 72%),
+    linear-gradient(160deg, #ffffff 0%, #faf6ee 60%, #f5efe3 100%);
   background-attachment: fixed;
   color: hsl(var(--foreground));
   font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
@@ -59,6 +59,8 @@ body {
   /* Kartu clay dasar: cream, membulat, shadow hangat + puff highlight, tanpa border keras. */
   .clay-card {
     background-color: hsl(var(--card));
+    /* Gradasi cream halus: putih → cream (efek clay lembut, bukan flat). */
+    background-image: linear-gradient(145deg, #ffffff 0%, #fbf7ef 100%);
     border-radius: 1.5rem;
     box-shadow: var(--clay-shadow);
   }
