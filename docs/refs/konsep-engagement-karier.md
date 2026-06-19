@@ -103,6 +103,21 @@ yang bikin dilirik perusahaan; dan **siswa + guru lebih sering buka app & senang
   telemedicine** yang berat regulasinya — pendekatan kemitraan (bukan bangun sendiri) menjaga
   Magneo tetap fokus di core sekolah.
 
+### F7. Dashboard Kepala Sekolah (pemetaan guru↔siswa by AI + alat sederhana)
+- **Apa:** kepsek dapat **analisa AI** yang memetakan guru terhadap siswanya (keterlibatan,
+  pola kehadiran, kelas yang perlu perhatian) → bisa menyesuaikan (dukungan/penempatan).
+- **Cara kerja aman:** jalan di atas **data internal sekolah** (kehadiran, aktivitas) yang kepsek
+  memang berhak lihat; pakai **ID/agregat**, tak butuh nama siswa (ADR-005). Tidak keluar sekolah.
+- **Guardrail KETENAGAKERJAAN (penting):** AI = **decision-support, bukan vonis otomatis.**
+  Output = insight + alasan (explainable); **kepsek yang memutuskan.** Jangan jadi skor hukuman
+  otomatis untuk guru; transparan ke guru; waspada bias algoritmik.
+- **Alat sederhana yang dibutuhkan kepsek (simpel, bertumpu data yang sudah ada):**
+  - Ringkasan kehadiran harian + **tren mingguan** (kembangkan summary 2f).
+  - **Papan aktivitas guru** (siapa aktif di Open Class/pengumuman/koreksi) — untuk apresiasi, bukan hukuman.
+  - **Alarm dini (EWS):** kelas dengan kehadiran turun / banyak ABSENT_NO_INFO → kepsek tindak lanjut.
+    (Enum `EwsStatus` sudah ada di skema — nyambung.)
+- **Rumah fase:** **Fase 8 (Analitik)** + modul **AI (Fase 4)**.
+
 ## 3. Roadmap bertahap (dipetakan ke fase yang sudah ada)
 | Saat | Yang dibangun |
 |---|---|
@@ -112,11 +127,13 @@ yang bikin dilirik perusahaan; dan **siswa + guru lebih sering buka app & senang
 | **Fase 7 (Alumni & Karier)** | F2 "mekar" → profil publik / rekrutmen perusahaan (subjek sudah dewasa). |
 | **Fase berbadan-hukum / ADR khusus** | F4 tahap-2 (les berbayar uang-nyata) + F2 showcase siswa-aktif (izin ortu). |
 | **Modul wellness (dekat Fase 4 AI) + fase kemitraan** | F6 tahap-1 (self-tracker + AI wellness guru); F6 tahap-2 (koneksi dokter via mitra telemedicine berlisensi). |
+| **Fase 8 (Analitik) + AI (Fase 4)** | F7 dashboard kepsek: tren kehadiran, papan aktivitas guru, EWS, pemetaan guru↔siswa (AI advisory). |
 
 ## 4. ADR baru yang dibutuhkan (sebelum bagian berisiko dibangun)
 - **ADR-baru-A — Model monetisasi guru:** poin dulu; uang-nyata hanya via PJP + badan hukum + pemisahan peran.
 - **ADR-baru-B — Penempatan & paparan data skill anak:** badge di Box; showcase = alumni / consent ortu; tak pernah jadi produk (perkuat ADR-005 & 13.13).
 - **ADR-baru-C — Model komunikasi terang (Open Class/Consult):** semua tercatat & auditable; tak ada kanal tersembunyi (perkuat 13.5).
+- **ADR-baru-E — AI advisory untuk evaluasi guru (F7):** AI = decision-support, bukan auto-skor punitif; explainable; kepsek yang memutuskan; transparan ke guru; data internal/agregat (ADR-005).
 - **ADR-baru-D — Data kesehatan & wellness AI (F6):** subjek dewasa (guru) saja; consent eksplisit; data kesehatan terenkripsi & **privat dari sekolah**; AI = wellness bukan diagnosis (disclaimer); koneksi dokter hanya via mitra telemedicine **berlisensi** (Permenkes). Data kesehatan siswa = TIDAK dalam scope (anak + kesehatan = langkah hukum jauh lebih berat).
 
 ## 5. Keputusan
