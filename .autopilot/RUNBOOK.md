@@ -33,6 +33,18 @@ Ini menyerap pesan/komando/file yang owner kirim (termasuk `aplikasi.md` baru) k
   **"KONSTITUSI DIPERBARUI"** → WAJIB baca ulang `aplikasi.md` bagian terkait sebelum lanjut.
   Setelah diproses, tandai sudah dibaca: pindahkan isi inbox.txt ke `inbox.processed.txt` (append) lalu kosongkan inbox.txt.
 
+### 2b. Sinkronisasi konsep → aplikasi.md (bila inbox berisi "SINKRON_KONSEP")
+Ini operasi BERISIKO TINGGI (mengubah konstitusi). Jangan koding fase saat iterasi ini; fokus sinkronisasi.
+1. **Deep analyze dua arah:** baca TUNTAS file big-concept HTML terbaru (biasanya di `01-Strategi/` — pilih yang paling baru diubah / yang owner sebut) DAN `aplikasi.md` v terkini seutuhnya.
+2. **Klasifikasi tiap perubahan:**
+   - **Cocok/menambah** (tidak melanggar ADR/guardrail & tidak membongkar Fase 0/1 yang sudah jadi) → boleh diterapkan.
+   - **BENTROK** dengan: kode yang sudah dibangun & terbukti (Fase 0/1), salah satu 8 ADR, 12 guardrail BAGIAN 13, atau menyentuh data anak/uang/keamanan → **JANGAN terapkan**. Parkir.
+3. **Terapkan yang cocok:** backup dulu (`cp aplikasi.md _backup/aplikasi.SEBELUM-sinkron.<stamp>.md`), lalu sunting `aplikasi.md` rapi (tanpa dokumen saingan, jaga konsistensi & gaya), bump versi (mis. v1.1 → v1.2) + tulis catatan revisi di header: apa yang ditambah/diubah.
+4. **Parkir yang bentrok:** JANGAN ubah bagian itu. Kumpulkan jadi daftar pertanyaan jelas (per-titik: "konsep minta X, tapi Y sudah dibangun/ADR — pilih A/B?").
+5. **Lapor & tanya (Telegram):** kirim ringkasan bahasa manusia: yang SUDAH diterapkan + daftar BENTROK yang menunggu keputusan owner. Set `control.json` `awaiting_conflict_decision=true` bila ada bentrok.
+6. Catat di `docs/progress.md` (revisi konstitusi) + checklist. Commit `docs(spec): aplikasi.md vX sinkron big-concept (sebagian, N bentrok menunggu)`.
+7. Setelah owner menjawab bentrok (lewat inbox), terapkan keputusannya, bump versi lagi, lapor.
+
 ### 3. Ritual awal (konstitusi BAGIAN 1)
 - Baca `docs/progress.md` dari atas (papan STATUS SAAT INI). Pahami fase & potongan terakhir.
 - Baca bagian `aplikasi.md` yang relevan dengan potongan berikutnya (mis. Fase 2 → BAGIAN 10.2–10.4 & 12).
