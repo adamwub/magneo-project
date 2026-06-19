@@ -82,10 +82,11 @@ yang bikin dilirik perusahaan; dan **siswa + guru lebih sering buka app & senang
   **`PARENTS` = SCHOOL_ADMIN/PRINCIPAL + wali kelas (khusus ortu kelas yang diampu, filter classId).**
 - **Rumah fase:** **Fase 2** (penyesuaian 12A.4) — kecil, aman, nyambung dengan PARENT_HOMEROOM.
 
-### F6. Analisa Kesehatan Guru (AI wellness → koneksi dokter)
-- **Apa:** guru input data kesehatan manual → **AI** kasih analisa + **disclaimer**; ke depan
-  bisa terhubung ke dokter (guru↔dokter). *Untuk GURU (dewasa), bukan siswa.*
-- **Kabar baik:** karena subjeknya **dewasa**, ini bebas dari landmine data-anak. Tapi
+### F6. Analisa Kesehatan untuk Dewasa — Guru & Orang Tua (AI wellness → koneksi dokter)
+- **Apa:** **guru DAN orang tua** input data kesehatan manual → **AI** kasih analisa + **disclaimer**;
+  ke depan bisa terhubung ke dokter. *Subjek = dewasa (guru/ortu), BUKAN siswa.*
+- **Kabar baik:** karena subjeknya **dewasa**, ini bebas dari landmine data-anak. Makin banyak
+  pengguna dewasa (guru+ortu) juga memperkuat nilai kemitraan telemedicine nanti. Tapi
   **data kesehatan = kategori khusus PDP** (tetap perlu consent + keamanan tinggi).
 - **Cara kerja aman / bertahap:**
   - **Tahap-1 (doable):** *self-tracker wellness* (tidur, mood, BMI, dll) + **AI insight gaya hidup**,
@@ -94,8 +95,8 @@ yang bikin dilirik perusahaan; dan **siswa + guru lebih sering buka app & senang
     penyedia telemedicine **berlisensi** (Halodoc/Alodokter/Good Doctor dll) yang punya dokter
     ber-STR/SIP, tanggung jawab medis, & kepatuhan Permenkes. Magneo = pintu masuk + (dengan
     consent) berbagi data self-track ke mitra.
-- **Guardrail KHUSUS:** data kesehatan guru **PRIVAT — TIDAK terlihat admin/kepsek** (privasi
-  ketenagakerjaan; jangan sampai dipakai menekan guru); AI = **wellness, bukan diagnosis/resep**;
+- **Guardrail KHUSUS:** data kesehatan **PRIVAT milik orangnya** — guru tak terlihat admin/kepsek
+  (privasi kerja); ortu tak terlihat sekolah; AI = **wellness, bukan diagnosis/resep**;
   consent eksplisit; enkripsi at-rest.
 - **Rumah fase:** dekat modul **AI (Fase 4)** sebagai modul *wellness* terpisah; **koneksi dokter
   = fase kemitraan + kajian hukum** (Permenkes telemedicine + PDP data kesehatan).
@@ -129,6 +130,15 @@ yang bikin dilirik perusahaan; dan **siswa + guru lebih sering buka app & senang
   showcase publik-bernama = consent.
 - **Guardrail:** ADR-005 (nama anak hanya dengan consent untuk paparan publik), 13.13 (bukan produk);
   internal/agregat aman.
+
+### F9. Profil Guru untuk Orang Tua (tanpa kontak pribadi)
+- **Apa:** ortu bisa lihat **profil guru** (nama, mapel, kelas yang diampu, kualifikasi/prestasi
+  terverifikasi, jadwal Open Class) — **TANPA nomor HP / kontak pribadi.**
+- **Cara kerja aman:** data **profesional** guru (dewasa) boleh di cloud (pengecualian dewasa ADR-005).
+  Kontak pribadi (HP, email pribadi, alamat) **tidak ditampilkan**; komunikasi ortu↔guru lewat kanal
+  app yang **tercatat** (PARENT_HOMEROOM / Open Class), bukan telepon → memperkuat "lewat app, bukan WA".
+- **Rumah fase:** modul `common/profile` + `comms`; dekat **Fase 2** (PARENT_HOMEROOM sudah ada).
+- **Guardrail:** privasi kontak guru; komunikasi terang & tercatat (13.5).
 
 ## 3. Roadmap bertahap (dipetakan ke fase yang sudah ada)
 | Saat | Yang dibangun |
