@@ -43,3 +43,4 @@ _backup/
 *service-account*.json
 firebase-adminsdk*.json
 **/.secrets/
+apps/mobile/android/app/google-services.json
