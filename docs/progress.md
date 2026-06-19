@@ -138,6 +138,18 @@
 
 -----
 
+## 2026-06-19 — Web shell: navigasi responsif HP (sidebar → drawer)
+
+**Yang dikerjakan:** Sidebar jadi responsif. `components/mobile-nav.tsx` (baru, client): di <lg, hamburger di topbar buka drawer off-canvas (panel `.glass-overlay` — pemakaian glass pertama, sesuai aturan "glass khusus overlay") berisi brand + SidebarNav; tutup saat klik item/backdrop. `dashboard-shell.tsx`: sidebar `hidden lg:flex`, grid `grid-cols-1 lg:grid-cols-[240px_1fr]`, topbar + hamburger. Kena SEMUA halaman dashboard.
+
+**Bukti (magnoo-visualqa, computed + screenshot):** 4/4 PASS — mobile: aside display:none, main width 390px (full), hamburger buka drawer glass (blur 24px, menu lengkap, Absensi aktif biru), klik "Kelas" → navigasi + drawer tutup; desktop: sidebar 240px utuh, hamburger hidden. Screenshot `.autopilot/qa-shots/qa5-*.png` (dikirim owner). typecheck ✅.
+
+**Utang kecil:** hit-area hamburger 36px → idealkan ≥44px (digabung di rebuild berikutnya). Catatan: blur drawer 24px = sesuai spec overlay owner (bukan 20px clay).
+
+**Status:** Responsif HP beres. Berikutnya: halaman fungsional web (absensi-kelas / izin / pengumuman) — semua sudah ber-tema & responsif.
+
+-----
+
 ## 2026-06-19 — 2l-theme (revisi owner): Powder-blue primary, latar putih/gradasi
 
 **Revisi setelah review owner:** primary HIJAU sage → **POWDER BLUE** (#A2C2D6) untuk tombol & nav aktif; **sage diturunkan jadi aksen kecil**; latar warm-sand tan → **putih lembut + gradasi soft (putih→cream)** + blob biru/peach tipis (hijau minim); kartu cream pakai **gradasi** (putih→cream), bukan flat. File: globals.css (token+bg+clay-card gradient), tailwind. Doc `design-system-magneo.md` diberi blok REVISI.
