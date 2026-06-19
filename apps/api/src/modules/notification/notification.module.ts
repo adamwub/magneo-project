@@ -1,9 +1,19 @@
 import { Module } from "@nestjs/common";
+import { AuthModule } from "../auth/auth.module";
+import { DeviceController } from "./device.controller";
+import { DeviceService } from "./device.service";
 
 /**
- * Modul notification (ADR-003 modular monolith). Stub Fase 0c — diisi pada fasenya.
- * Aturan boundary: antar-modul hanya lewat service interface yang di-export,
- * dilarang import repository/entity modul lain langsung.
+ * Modul notification (ADR-003 modular monolith).
+ * Fase 2 — 2g: registrasi device push (`/me/devices`). Antrean `notifications` + pengiriman
+ * FCM nyata (firebase-admin) + WA stub menyusul (butuh service account FCM dari owner).
+ *
+ * Mengimpor AuthModule untuk JwtAuthGuard. PrismaModule/RbacModule global (app.module).
  */
-@Module({})
+@Module({
+  imports: [AuthModule],
+  controllers: [DeviceController],
+  providers: [DeviceService],
+  exports: [DeviceService],
+})
 export class NotificationModule {}
