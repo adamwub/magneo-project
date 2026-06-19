@@ -138,6 +138,18 @@
 
 -----
 
+## 2026-06-19 — Fase 2 / 2l: Halaman web Pengumuman (buat + daftar + tarik)
+
+**Yang dikerjakan:** Halaman fungsional web `/school/pengumuman` (admin/kepsek). `app/school/pengumuman/{page.tsx,actions.ts}` (baru), `components/school/{announcement-form,announcement-retract}.tsx` (baru, client), +menu nav. Form pilih Sasaran (Seluruh sekolah/Orang tua/Angkatan) + judul + isi → server action `POST /announcements`; daftar dgn badge sasaran + waktu; tombol "Tarik" muncul bila <15mnt → `POST /:id/retract`. Ber-tema clay biru-soft + responsif.
+
+**Bukti (magnoo-funcqa, end-to-end nyata di web live):** PASS semua langkah — login→form tampil→buat "TES QA"→muncul di daftar→klik Tarik→hilang dari daftar aktif (data uji bersih). Validasi tombol benar (disabled saat kosong). Nol error fatal. web typecheck ✅.
+
+**Catatan:** item ditarik hilang dari daftar (backend `GET /announcements` filter retractedAt=null, sesuai 2j) — branch badge "Ditarik" di UI jadi tak terpakai (harmless).
+
+**Status:** Pengumuman web beres & terbukti jalan. Berikutnya 2l: halaman keputusan Izin (admin), lalu absensi per-kelas; kemudian 2m mobile.
+
+-----
+
 ## 2026-06-19 — Web shell: navigasi responsif HP (sidebar → drawer)
 
 **Yang dikerjakan:** Sidebar jadi responsif. `components/mobile-nav.tsx` (baru, client): di <lg, hamburger di topbar buka drawer off-canvas (panel `.glass-overlay` — pemakaian glass pertama, sesuai aturan "glass khusus overlay") berisi brand + SidebarNav; tutup saat klik item/backdrop. `dashboard-shell.tsx`: sidebar `hidden lg:flex`, grid `grid-cols-1 lg:grid-cols-[240px_1fr]`, topbar + hamburger. Kena SEMUA halaman dashboard.
