@@ -5,6 +5,8 @@ import { PermitController } from "./permit.controller";
 import { PermitService } from "./permit.service";
 import { AnnouncementController } from "./announcement.controller";
 import { AnnouncementService } from "./announcement.service";
+import { ThreadController } from "./thread.controller";
+import { ThreadService } from "./thread.service";
 
 /**
  * Modul comms (ADR-003 modular monolith).
@@ -15,8 +17,8 @@ import { AnnouncementService } from "./announcement.service";
  */
 @Module({
   imports: [AuthModule, AttendanceModule],
-  controllers: [PermitController, AnnouncementController],
-  providers: [PermitService, AnnouncementService],
-  exports: [PermitService, AnnouncementService],
+  controllers: [PermitController, AnnouncementController, ThreadController],
+  providers: [PermitService, AnnouncementService, ThreadService],
+  exports: [PermitService, AnnouncementService, ThreadService],
 })
 export class CommsModule {}

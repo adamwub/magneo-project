@@ -22,7 +22,7 @@
 - **⚠️ KONSTITUSI DIPERBARUI (2026-06-19): `aplikasi.md` naik v1.2 → v1.3 — TAMBAL CELAH FASE 2.** Hasil audit agen `magnoo-architect` (3 BLOCKER + 2 ringan). Ditambah **BAGIAN 12A — Adendum Spec Fase 2 (mengikat)**: koordinat+CIDR WiFi sekolah (A-1), model `DeviceToken`+`/me/devices` utk FCM (B-1), pemutus izin=wali kelas+SCHOOL_ADMIN (C-2), token QR TOTP server-side + anti-replay/foto (A-2/3), state machine izin (C-1), pengetatan notif/izin/pengumuman + 7 kode error baru. Detail & sumber: `docs/refs/fase2-grounding.md`. Backup: `_backup/aplikasi.SEBELUM-tambalfase2.*.md`. **Spec Fase 2 kini "siap dibangun lurus".** ADR & fase 0–8 tidak berubah.
 - **⚠️ KONSTITUSI DIPERBARUI (2026-06-19): `aplikasi.md` naik v1.1 → v1.2.** Sinkron dari **Big Blueprint v2** (dokumen STRATEGI, disimpan di `01-Strategi/magnoo-big-blueprint-v2.html`). **Hanya 2 tambahan; FASE TEKNIS 0–8 & semua ADR TIDAK BERUBAH:** (1) subbagian **1.1 Visi Jangka Panjang (5 Lapisan)** — konteks arah bisnis (Sekolah → OOH/Layar → Platform OOH → Programmatic → Data Marketplace); lapisan 2–5 BELUM buildable (butuh ADR + kajian hukum tersendiri). (2) **Guardrail 13.13 — Tembok Pemisah Data Anak**: data anak/sekolah tak pernah jadi produk iklan/OOH/data-marketplace; lapisan 2–5 hanya boleh data agregat/anonim & sumber non-anak. Backup pra-sinkron: `_backup/aplikasi.SEBELUM-sinkron-v2.*.md`. **Tidak berdampak ke Fase 2.**
 - **⚠️ KONSTITUSI DIPERBARUI (2026-06-17): `aplikasi.md` naik v1.0 → v1.1.** Pemilik mengirim revisi via Telegram bot. **Satu-satunya perubahan isi:** modul **Startup Center (Fase 8)** diperluas dari kerangka dasar jadi modul penuh — 6 model data baru (IdeaSupport, IdeaComment, Competition, CompetitionEntry, MentorProfile, MentorSession) + StartupIdea diperluas, ~30 endpoint, layar mobile (tab Startup Siswa & Guru, tab Mentor Alumni), dashboard web Sekolah & HQ, aturan bisnis **10.12**, ThreadType `STARTUP_ROOM`, 2 cron job baru. **Fase 0–7 TIDAK berubah** → tidak berdampak ke pekerjaan saat ini (kita di ambang Fase 2). Versi lama dibackup di `_backup/aplikasi.20260617-083507.md`. Catatan revisi ada di header `aplikasi.md`.
-- **Posisi sekarang:** Fase 0 ✅, **🎉 FASE 1 TUNTAS (1a–1k ✅)**. **FASE 2 berjalan (mode otonom) — 2a ✅ 2b ✅ 2c ✅ 2d ✅ 2e ✅ 2f ✅ 2g-1 ✅ 2i ✅ 2j ✅.** 2a=pondasi data. 2b=verifikasi lokasi (geofence+IP-CIDR, trust proxy=1, radius 150). 2c=token QR server-side (secret TOTP per-sekolah terenkripsi AES-256-GCM, period=30/digits=8/SHA256, `GET /attendance/qr/current`). 2d=check-in QR siswa (token+lokasi+double<5mnt+anti-replay, status PRESENT/LATE). 2e=status harian + koreksi absen (10.3/10.4). 2f=laporan kehadiran (me/class/school). 2g-1=registrasi device /me/devices ✅. 2i=izin/permit ✅. 2j=pengumuman ✅. **Berikutnya: 2k** (thread PARENT_HOMEROOM) — buildable. 2g-2/2h (push FCM) nunggu Firebase owner.
+- **Posisi sekarang:** Fase 0 ✅, **🎉 FASE 1 TUNTAS (1a–1k ✅)**. **FASE 2 berjalan (mode otonom) — 2a ✅ 2b ✅ 2c ✅ 2d ✅ 2e ✅ 2f ✅ 2g-1 ✅ 2i ✅ 2j ✅ 2k ✅ (backend inti lengkap).** 2a=pondasi data. 2b=verifikasi lokasi (geofence+IP-CIDR, trust proxy=1, radius 150). 2c=token QR server-side (secret TOTP per-sekolah terenkripsi AES-256-GCM, period=30/digits=8/SHA256, `GET /attendance/qr/current`). 2d=check-in QR siswa (token+lokasi+double<5mnt+anti-replay, status PRESENT/LATE). 2e=status harian + koreksi absen (10.3/10.4). 2f=laporan kehadiran (me/class/school). 2g-1=registrasi device /me/devices ✅. 2i=izin/permit ✅. 2j=pengumuman ✅. 2k=thread ortu↔wali kelas ✅. **Berikutnya: 2l (web /school) atau 2h (push FCM saat Firebase siap)**; lalu 2m (mobile), 2n (E2E+QA-4).
 - **Sedang menuju:** **FASE 2** (2a ✅ → 2b berikutnya) — Attendance (QR), Notifikasi (FCM nyata; WA stub), Izin, Pengumuman. Rencana potongan 2a–2n disusun arsitek (lihat entri "Potongan 2a"). DoD Fase 2: scan QR→notif <60dtk, rule 10.2–10.4 ada unit test, QA-4 lulus.
 - **Uji E2E Fase 1:** `pnpm --filter @magnoo/api test:e2e` (`test/e2e/fase1.e2e.ts`) — butuh backend hidup (`PORT=3100`) + Postgres/Redis; OTP dibaca dari log server (`E2E_API_LOG`). 23 cek lulus.
 - **Catatan QA visual:** web diuji via Playwright+Chrome; mobile (Flutter) via `flutter analyze` + 5 widget test + `flutter build web` + screenshot. Server lokal uji: backend `PORT=3100`, web `next start -p 3005`, flutter web `python3 -m http.server 3007` di `build/web`.
@@ -138,6 +138,24 @@
 
 -----
 
+## 2026-06-19 — Fase 2 / Potongan 2k: Thread ortu↔wali kelas (PARENT_HOMEROOM, 10.7/12A.5)
+
+**Yang dikerjakan:** Kanal pesan ortu↔wali kelas — aman & tercatat, tanpa siswa (guardrail 13.5).
+
+**File (apps/api/src/modules/comms/):** `thread.service.ts` (baru), `thread.controller.ts` (baru), `comms.module.ts` (+Thread). `packages/shared/src/thread.ts` (baru) + index. Pakai model `Thread`/`Message`. Tanpa migrasi.
+- `POST /threads` — ortu (ParentLink ACTIVE) mulai thread dengan wali kelas anaknya; peserta = [ortu, wali kelas]; pesan pertama dari templateKey.
+- `POST /threads/:id/messages` & `GET /threads/:id/messages` — **hanya peserta**, **hanya tipe PARENT_HOMEROOM** (CLASS_ROOM/APPLICATION ditolak di Fase 2), **STUDENT ditolak** (13.5).
+- `GET /threads` — daftar thread peserta. Semua pesan tercatat (Message append-only).
+
+**Bukti:** 8 tes (start ortu-link/no-link/no-wali/non-ortu; send peserta/non-peserta/tipe-salah/siswa-ditolak); **full api 168/168** (25 file, nol regresi); typecheck ✅; shared build ✅.
+**Audit security: PASS (AMAN)** — 13.5 berlapis (tipe dikunci, siswa ditolak controller+service, peserta hardcode ortu+wali, pesan terlog), IDOR tertutup (ParentLink + keanggotaan), nol PII anak, append-only.
+
+**Utang (dari audit) → Ide & Utang:** (MED) tulis AuditLog THREAD_START/MESSAGE_SEND; (MED) tambah assert `thread.schoolId===actor.schoolId` (defense-in-depth lintas sekolah); (LOW) batasi panjang `body` (z.max).
+
+**Status:** Selesai & terbukti. **Backend Fase 2 inti praktis lengkap** (absensi, izin, pengumuman, thread). Sisa: **2g-2/2h push FCM** (nunggu Firebase owner), **2l web /school**, **2m mobile**, **2n E2E + QA-4**. Berikutnya autopilot: 2l (web) atau 2h saat Firebase siap.
+
+-----
+
 ## 2026-06-19 — Fase 2 / Potongan 2j: Pengumuman (scope×role + retract 10.6/12A.4)
 
 **Yang dikerjakan:** Pengumuman sekolah/kelas/angkatan/ortu dengan kontrol siapa boleh kirim ke siapa, dan bisa ditarik dalam 15 menit.
@@ -242,7 +260,7 @@
 - (MED, 2n) belum ada **rate-limit** di endpoint checkin (anti brute-force token 8-digit). Risiko rendah (token tampil di gerbang + tetap harus lolos cek lokasi). Tambah ThrottlerGuard.
 - (2e) **recompute DailyAttendanceStatus** belum dilakukan di sini (sesuai scope — 2d hanya buat event IN). 2e: hitung status harian + override permit + pulang-awal + cron.
 
-**Status:** Selesai & terbukti (kode+tes; review security inline AMAN, agen ditunda krn 529). 2e=status harian + koreksi absen (10.3/10.4). 2f=laporan kehadiran (me/class/school). 2g-1=registrasi device /me/devices ✅. 2i=izin/permit ✅. 2j=pengumuman ✅. **Berikutnya: 2k** (thread PARENT_HOMEROOM) — buildable. 2g-2/2h (push FCM) nunggu Firebase owner. Mode otonom.
+**Status:** Selesai & terbukti (kode+tes; review security inline AMAN, agen ditunda krn 529). 2e=status harian + koreksi absen (10.3/10.4). 2f=laporan kehadiran (me/class/school). 2g-1=registrasi device /me/devices ✅. 2i=izin/permit ✅. 2j=pengumuman ✅. 2k=thread ortu↔wali kelas ✅. **Berikutnya: 2l (web /school) atau 2h (push FCM saat Firebase siap)**; lalu 2m (mobile), 2n (E2E+QA-4). Mode otonom.
 
 -----
 

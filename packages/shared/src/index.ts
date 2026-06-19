@@ -11,3 +11,4 @@ export * from "./attendance.js";
 export * from "./device.js";
 export * from "./permit.js";
 export * from "./announcement.js";
+export * from "./thread.js";
