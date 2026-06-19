@@ -28,6 +28,8 @@
   --border: 39 29% 78%; /* warm low-contrast #D8CDB8 */
   --input: 39 29% 78%;
   --ring: 109 21% 60%; /* sage */
+  --tertiary: 264 26% 75%; /* soft lavender #BCAFD0 — AKSEN tipis (badge/icon aktif), bukan area besar */
+  --tertiary-foreground: 262 30% 24%;
   --radius: 1.5rem; /* clay: sudut membulat chunky (24px) */
 
   /* Clay shadow HANGAT (coklat-krem) + highlight putih (efek puff), bukan abu-abu. */
