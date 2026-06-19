@@ -13,6 +13,7 @@ export default function SchoolLayout({ children }: { children: React.ReactNode }
       session={session}
       items={[
         { href: "/school", label: "Ringkasan" },
+        { href: "/school/absensi", label: "Absensi" },
         { href: "/school/kelas", label: "Kelas" },
         { href: "/school/pengguna", label: "Pengguna" },
       ]}

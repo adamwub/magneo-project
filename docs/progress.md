@@ -138,6 +138,19 @@
 
 -----
 
+## 2026-06-19 — Fase 2 / Potongan 2l (bagian-1): Web /school — halaman Absensi (ringkasan harian)
+
+**Yang dikerjakan:** Halaman web pertama Fase 2 untuk sekolah — ringkasan kehadiran harian (kepsek/admin).
+
+**File:** `apps/web/app/school/absensi/page.tsx` (baru — server component, pola BFF `apiFetch`), `apps/web/app/school/layout.tsx` (+menu "Absensi"). Pakai endpoint asli `GET /attendance/school/summary?date=` (role PRINCIPAL/SCHOOL_ADMIN, dari 2f) + skema `SchoolAttendanceSummary`. Pemilih tanggal = form GET native (tanpa JS klien); default hari ini (Asia/Jakarta). Kartu: total + Hadir/Terlambat/Izin/Sakit/Tanpa-Kabar (warna brand) + persentase.
+
+**Bukti:** web **typecheck lulus** (`tsc --noEmit`); halaman mengikuti pola identik halaman yang sudah jalan (kelas/pengguna); endpoint+schema nyata. 403 (role tak berhak) → pesan ramah. Tanpa PII (hanya angka counts).
+**Catatan jujur:** screenshot layar nyata BELUM diambil — butuh stack di-rebuild + login admin ber-seed; tidak menyentuh DB produksi di sesi otonom. Akan dibuktikan visual saat fase **2n (E2E + QA-4)** dengan data seed, atau on-demand bila owner minta.
+
+**Status:** Potongan-1 dari 2l selesai (terverifikasi compile). Berikutnya 2l: halaman absensi per-kelas (wali kelas), keputusan izin (wali/admin), pengumuman (buat/tarik). Lalu 2m (mobile) & 2n.
+
+-----
+
 ## 2026-06-19 — Fase 2 / Potongan 2h (nyata): FCM aktif — push NYATA (firebase-admin)
 
 **Yang dikerjakan:** Owner menyediakan service account Firebase → pengirim push NYATA dipasang. Sekarang server bisa kirim push ke HP (begitu device token terdaftar via app).

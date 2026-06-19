@@ -9,9 +9,10 @@
 -----
 
 ## Sedang dikerjakan
-- **Fase 2** (mode otonom). Berikutnya: **2l** tampilan web sekolah. Push FCM sudah AKTIF (kredensial Firebase owner terpasang & terbukti).
+- **Fase 2** (mode otonom). Berikutnya: lanjut **2l** web sekolah (halaman absensi-kelas, izin, pengumuman) → lalu 2m mobile, 2n uji akhir. Halaman Absensi sekolah sudah jadi.
 
 ## Selesai (terbaru di atas)
+- **2026-06-19** — Fase 2 **2l-1**: halaman web 'Absensi' sekolah (ringkasan harian: hadir/terlambat/izin/sakit/tanpa-kabar). Web typecheck lulus. ✅
 - **2026-06-19** — Fase 2 **2h-nyata**: kirim push ke HP NYALA — kredensial Firebase owner terpasang, server terbukti berhasil tersambung ke FCM. Tinggal app HP daftar token. 173 tes api lulus. ✅
 - **2026-06-19** — Fase 2 **2h-pondasi**: mesin notifikasi siap (dedup, tanpa data pribadi anak, nyambung ke check-in). Kirim ke HP nyala otomatis begitu Firebase dipasang. 173 tes api lulus, audit aman. ✅
 - **2026-06-19** — Fase 2 **2k**: chat ortu↔wali kelas — aman, tercatat, tanpa siswa. Backend inti Fase 2 (absen, izin, pengumuman, chat) lengkap. 168 tes api lulus, audit aman. ✅
